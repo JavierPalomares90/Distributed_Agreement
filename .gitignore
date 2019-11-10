@@ -9,3 +9,8 @@ out/
 
 
 .vscode/
+.classpath
+.project
+.settings/*
+target/*
+*.class
