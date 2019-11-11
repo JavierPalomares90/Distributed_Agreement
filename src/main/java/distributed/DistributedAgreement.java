@@ -18,11 +18,14 @@ public class DistributedAgreement
     private static int port;
     private static List<Server> hosts;
 
+    private static String HOSTS_FILE = "hosts.yaml";
+
     // Load the hosts from the yaml file
     private static List<Server> getHosts()
     {
         Yaml yaml = new Yaml(new Constructor(Server.class));
-        InputStream inputStream = DistributedAgreement.class.getResourceAsStream("resources/hosts.yaml");
+        ClassLoader classLoader = ClassLoader.getSystemClassLoader();
+        InputStream inputStream = classLoader.getResourceAsStream(HOSTS_FILE);
         List<Server> hosts = new ArrayList<Server>();
         for (Object o : yaml.loadAll(inputStream))
         {
