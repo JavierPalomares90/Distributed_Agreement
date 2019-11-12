@@ -1,6 +1,10 @@
 package distributed.client;
 
+import distributed.server.pojos.Server;
+import distributed.utils.Utils;
 import org.apache.log4j.Logger;
+
+import java.util.List;
 
 public class Client
 {
@@ -10,6 +14,7 @@ public class Client
 
     public static void main(String[] args)
     {
+        List<Server> servers = Utils.getHosts();
 
 
     }

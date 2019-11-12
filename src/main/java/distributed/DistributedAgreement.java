@@ -2,6 +2,7 @@ package distributed;
 
 import distributed.server.pojos.Server;
 import distributed.server.threads.ServerThread;
+import distributed.utils.Utils;
 import org.apache.log4j.Logger;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
@@ -16,21 +17,7 @@ public class DistributedAgreement
     private static double weight;
     private static Logger logger = Logger.getLogger(DistributedAgreement.class);
 
-    private static String HOSTS_FILE = "hosts.yaml";
 
-    // Load the hosts from the yaml file
-    private static List<Server> getPeers()
-    {
-        Yaml yaml = new Yaml(new Constructor(Server.class));
-        ClassLoader classLoader = ClassLoader.getSystemClassLoader();
-        InputStream inputStream = classLoader.getResourceAsStream(HOSTS_FILE);
-        List<Server> hosts = new ArrayList<Server>();
-        for (Object o : yaml.loadAll(inputStream))
-        {
-            hosts.add( (Server) o);
-        }
-        return hosts;
-    }
 
     private static Server getSelf(int serverId, List<Server> servers)
     {
@@ -48,7 +35,7 @@ public class DistributedAgreement
     {
         int serverId = Integer.parseInt(args[1]);
         logger.debug("Starting serverId: " + serverId);
-        List<Server> peers = getPeers();
+        List<Server> peers = Utils.getHosts();
         Server host = getSelf(serverId,peers);
 
         // Spawn off a thread to handle messages from client
