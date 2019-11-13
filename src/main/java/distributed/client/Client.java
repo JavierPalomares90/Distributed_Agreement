@@ -27,31 +27,45 @@ public class Client
 
     }
 
-    private static void getSocket(List<Server> servers)
-    {
-
-    }
-
-    private static void sendCmd(List<Server> servers, String cmd)
+    private static Socket getSocket(List<Server> servers)
     {
     	Socket socket = null;
     	int index = 0;
 
-    	// Pick a server to connect to
-    	Server toConnect = pickServer(servers,index);
-    	try
+	    while(socket == null)
 	    {
-		    socket = new Socket(toConnect.getIpAddress(),toConnect.getPort());
+		    // Pick a server to connect to
+		    Server toConnect = pickServer(servers,index);
+		    try
+		    {
+			    logger.debug("Connecting to server " + toConnect.toString());
+			    socket = new Socket(toConnect.getIpAddress(),toConnect.getPort());
 
-		}catch (IOException e)
-		{
-			logger.error("Unable to connect to server " + toConnect.toString(),e);
+		    }catch (IOException e) {
+		    	socket = null;
+			    logger.error("Unable to connect to server " + toConnect.toString(), e);
 
-		}
+		    }
+		    index++;
+	    }
+    	return socket;
 
-		logger.debug("Connecting to server " + toConnect.toString());
-		PrintWriter outputWriter = new PrintWriter(socket.getOutputStream(), true);
-		BufferedReader inputReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+    }
+    private static void sendCmd(List<Server> servers, String cmd)
+    {
+    	Socket socket = getSocket(servers);
+    	PrintWriter outputWriter = null;
+		BufferedReader inputReader	= null;
+	    try
+	    {
+		    outputWriter = new PrintWriter(socket.getOutputStream(), true);
+		    inputReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+	    }catch (IOException e)
+	    {
+	    	logger.error("Unable to get input/output streams to socket",e);
+	    	return;
+
+	    }
 		// Write the purchase message
 		outputWriter.write(cmd + "\n");
 		outputWriter.flush();
@@ -61,29 +75,32 @@ public class Client
 
 		while(true)
 		{
-			response = inputReader.readLine();
+			try
+			{
+				response = inputReader.readLine();
+			}catch (IOException e)
+			{
+				logger.error("Unable to read line",e);
+			}
 			if (response == null)
 			{
 				break;
 			}
 			// Print the response
 			System.out.println(response);
-			logger.debug("Response from server: " + response)
+			logger.debug("Response from server: " + response);
 		}
-		finally
-		{
-			if (socket != null)
-			{
-				try
-				{
-					socket.close();
-				}catch(IOException e)
-				{
-					logger.error("Unable to close socket ",e);
-				}
+	    if (socket != null)
+	    {
+		    try
+		    {
+			    socket.close();
+		    }catch(IOException e)
+		    {
+			    logger.error("Unable to close socket ",e);
+		    }
 
-			}
-		}
+	    }
 
     }
 
