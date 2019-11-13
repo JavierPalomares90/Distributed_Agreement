@@ -53,7 +53,7 @@ public class ServerThread implements Runnable
                 if(socket != null)
                 {
                     // Spawn off a new thread to process messages from this client
-                    ClientThread clientThread = new ClientThread();
+                    MessageThread clientThread = new MessageThread();
                     clientThread.setSocket(socket);
                     new Thread(clientThread).start();
                 }

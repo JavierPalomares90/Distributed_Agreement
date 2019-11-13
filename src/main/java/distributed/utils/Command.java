@@ -2,7 +2,10 @@ package distributed.utils;
 
 public enum Command
 {
-    RESERVE("RESERVE");
+    RESERVE("RESERVE"),
+    PREPARE("PREPARE"),
+    ACCEPT("ACCEPT"),
+    LEARN("LEARN");
 
     private String command;
 

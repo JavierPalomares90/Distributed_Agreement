@@ -1,5 +1,14 @@
 package distributed.server.requests;
 
-public class AcceptRequest
+import distributed.utils.Command;
+
+public class AcceptRequest extends  Request
 {
+    @Override
+    public String toString()
+    {
+        return Command.ACCEPT + " " + this.getId() + " " + this.getValue();
+    }
+
+
 }

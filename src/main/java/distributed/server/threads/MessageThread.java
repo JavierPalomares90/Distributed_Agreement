@@ -1,6 +1,9 @@
 package distributed.server.threads;
 
+import distributed.server.requests.PrepareRequest;
+import distributed.server.requests.Request;
 import distributed.utils.Command;
+import distributed.utils.Utils;
 import lombok.AccessLevel;
 import lombok.Setter;
 import org.apache.log4j.Logger;
@@ -11,19 +14,31 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-public class ClientThread implements Runnable
+public class MessageThread implements Runnable
 {
-    private static Logger logger = Logger.getLogger(ClientThread.class);
+    private static Logger logger = Logger.getLogger(MessageThread.class);
 
     @Setter(AccessLevel.PUBLIC)
     Socket socket;
 
+    private String sendRequest(Request request)
+    {
+        logger.debug("Sending request to peers" + request.toString());
+        //TODO: Complete impl
+        return null;
+
+    }
+
 
    // Start the paxos algorithm to reserve the value
-    private void reserveValue(String value)
+    private String reserveValue(String value)
     {
-        //TODO: Complete impl
-
+        logger.debug("Reserving value " + value);
+        // Prepare request
+        Request request = new PrepareRequest();
+        request.setId(Utils.getId());
+        request.setValue(value);
+        return sendRequest(request);
     }
 
 
@@ -35,7 +50,7 @@ public class ClientThread implements Runnable
             if(tokens.length > 1)
             {
                 String value = tokens[1];
-                reserveValue(value);
+                return reserveValue(value);
 
             }
         }
@@ -53,6 +68,7 @@ public class ClientThread implements Runnable
             if (inputLine != null && inputLine.length() > 0)
             {
                 String msg = inputLine;
+                logger.debug("Processing message from client");
                 String response = processMessage(msg);
                 // Increment the logical clock on response
                 if(response != null)
