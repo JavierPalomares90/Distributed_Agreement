@@ -1,5 +1,6 @@
 package distributed.server.threads;
 
+import distributed.utils.Command;
 import lombok.AccessLevel;
 import lombok.Setter;
 import org.apache.log4j.Logger;
@@ -18,10 +19,27 @@ public class ClientThread implements Runnable
     Socket socket;
 
 
-    private String processMessage(String msg)
+   // Start the paxos algorithm to reserve the value
+    private void reserveValue(String value)
     {
         //TODO: Complete impl
-        return null;
+
+    }
+
+
+    private String processMessage(String msg)
+    {
+        String[] tokens = msg.split("\\s+");
+        if(Command.RESERVE.getCommand().equals(tokens[0]))
+        {
+            if(tokens.length > 1)
+            {
+                String value = tokens[1];
+                reserveValue(value);
+
+            }
+        }
+        return "Unable to process msg " + msg;
     }
 
     public void run()
