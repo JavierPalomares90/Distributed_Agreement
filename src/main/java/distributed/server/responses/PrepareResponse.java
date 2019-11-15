@@ -1,5 +1,5 @@
 package distributed.server.responses;
 
-public class PrepareResponse
+public class PrepareResponse extends Response
 {
 }

@@ -1,7 +1,9 @@
 package distributed.server.threads;
 
+import distributed.server.pojos.Server;
 import distributed.server.requests.PrepareRequest;
 import distributed.server.requests.Request;
+import distributed.server.responses.Response;
 import distributed.utils.Command;
 import distributed.utils.Utils;
 import lombok.AccessLevel;
@@ -13,6 +15,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.List;
 
 public class MessageThread implements Runnable
 {
@@ -21,13 +24,9 @@ public class MessageThread implements Runnable
     @Setter(AccessLevel.PUBLIC)
     Socket socket;
 
-    private String sendRequest(Request request)
-    {
-        logger.debug("Sending request to peers" + request.toString());
-        //TODO: Complete impl
-        return null;
+    @Setter(AccessLevel.PUBLIC)
+    List<Server> peers;
 
-    }
 
 
    // Start the paxos algorithm to reserve the value
@@ -38,7 +37,13 @@ public class MessageThread implements Runnable
         Request request = new PrepareRequest();
         request.setId(Utils.getId());
         request.setValue(value);
-        return sendRequest(request);
+        // send the prepare request to all peers
+        List<Response> prepareResponses = request.sendRequest(peers);
+        /**
+         * TODO: Parse the prepare responses, then send accept response
+         */
+
+        return null;
     }
 
 

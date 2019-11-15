@@ -1,5 +1,5 @@
 package distributed.server.responses;
 
-public class AcceptResponse
+public class AcceptResponse extends Response
 {
 }

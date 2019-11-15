@@ -55,6 +55,7 @@ public class ServerThread implements Runnable
                     // Spawn off a new thread to process messages from this client
                     MessageThread clientThread = new MessageThread();
                     clientThread.setSocket(socket);
+                    clientThread.setPeers(peers);
                     new Thread(clientThread).start();
                 }
             }
