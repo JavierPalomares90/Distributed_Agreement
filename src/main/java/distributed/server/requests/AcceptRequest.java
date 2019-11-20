@@ -16,16 +16,5 @@ public class AcceptRequest extends  Request
         return Command.ACCEPT + " " + this.getId() + " " + this.getValue();
     }
 
-    @Override
-    public Response sendRequestToPeer(Server peer)
-    {
-        Response response = new AcceptResponse();
-        /**
-         * TODO: Send request to peer, parse the response
-         */
-
-        return response;
-    }
-
 
 }
