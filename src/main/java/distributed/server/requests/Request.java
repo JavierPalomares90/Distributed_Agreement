@@ -27,7 +27,6 @@ public abstract class Request
     {
         Response prepareResponse = null;
         String command = this.toString();
-        // Send the command over tcp
         // Send the command over TCP
         Socket tcpSocket = null;
 
@@ -51,11 +50,9 @@ public abstract class Request
                 {
                     break;
                 }
-                /**
-                 * TODO: Parse the response
-                 */
-                int id = 0;
-                String value = null;
+                String[] tokens = response.split("\\s+");
+                int id = Integer.parseInt(tokens[1]);
+                String value = tokens[2];
                 if(this instanceof PrepareRequest)
                 {
                     prepareResponse = new PrepareResponse(id,value);
