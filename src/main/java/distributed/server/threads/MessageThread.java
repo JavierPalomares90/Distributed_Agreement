@@ -47,6 +47,26 @@ public class MessageThread implements Runnable
     }
 
 
+    public String processPrepareRequest(String[] tokens)
+    {
+        /**
+         * TODO: Complete impl
+         */
+        return null;
+
+    }
+
+
+    public String processAcceptRequest(String[] tokens)
+    {
+        /**
+         * TODO: Complete impl
+         */
+        return null;
+
+    }
+
+
     private String processMessage(String msg)
     {
         String[] tokens = msg.split("\\s+");
@@ -58,6 +78,22 @@ public class MessageThread implements Runnable
                 return reserveValue(value);
 
             }
+        }else if(Command.PREPARE_REQUEST.getCommand().equals(tokens[0]))
+        {
+
+            if(tokens.length>2)
+            {
+               return processPrepareRequest(tokens) ;
+            }
+
+        }
+        else if(Command.ACCEPT_REQUEST.getCommand().equals(tokens[0]))
+        {
+            if(tokens.length>2)
+            {
+                return processAcceptRequest(tokens) ;
+            }
+
         }
         return "Unable to process msg " + msg;
     }
