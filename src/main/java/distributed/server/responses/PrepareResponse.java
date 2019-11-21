@@ -4,9 +4,9 @@ import distributed.utils.Command;
 
 public class PrepareResponse extends Response
 {
-    public PrepareResponse(int id, String value)
+    public PrepareResponse(int id, String value, boolean accepted)
     {
-        super(id,value);
+        super(id,value,accepted);
     }
 
     @Override

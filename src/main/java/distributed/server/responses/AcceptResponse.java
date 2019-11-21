@@ -4,9 +4,9 @@ import distributed.utils.Command;
 
 public class AcceptResponse extends Response
 {
-    public AcceptResponse(int id, String value)
+    public AcceptResponse(int id, String value,boolean accepted)
     {
-        super(id,value);
+        super(id,value,accepted);
     }
 
     @Override

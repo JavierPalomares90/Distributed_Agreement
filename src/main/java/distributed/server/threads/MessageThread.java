@@ -3,6 +3,8 @@ package distributed.server.threads;
 import distributed.server.pojos.Server;
 import distributed.server.requests.PrepareRequest;
 import distributed.server.requests.Request;
+import distributed.server.responses.AcceptResponse;
+import distributed.server.responses.PrepareResponse;
 import distributed.server.responses.Response;
 import distributed.utils.Command;
 import distributed.utils.Utils;
@@ -15,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -29,6 +32,102 @@ public class MessageThread implements Runnable
     List<Server> peers;
 
 
+    /**
+     * Send a request to the peer. Return the response from the peer
+     */
+
+    public Response sendRequestToPeer(Request request, Server peer)
+    {
+        Response responseFromPeer = null;
+        String command = request.toString();
+        // Send the command over TCP
+        Socket tcpSocket = null;
+
+        try
+        {
+            // Get the socket
+            tcpSocket = new Socket(peer.getIpAddress(),peer.getPort());
+            PrintWriter outputWriter = new PrintWriter(tcpSocket.getOutputStream(), true);
+            BufferedReader inputReader = new BufferedReader(new InputStreamReader(tcpSocket.getInputStream()));
+            // Write the purchase message
+            outputWriter.write(command + "\n");
+            outputWriter.flush();
+
+            // Wait for the response from the server
+            String response = "";
+
+            while(true)
+            {
+                response = inputReader.readLine();
+                if (response == null)
+                {
+                    break;
+                }
+                String[] tokens = response.split("\\s+");
+                String resCmd = tokens[0];
+                int id = Integer.parseInt(tokens[1]);
+                String value = tokens[2];
+                if(Command.REJECT_PREPARE.getCommand().equals(resCmd))
+                {
+                    // The Prepare request was rejected
+                    responseFromPeer = new PrepareResponse(id,value,false);
+
+                }else if (Command.REJECT_ACCEPT.getCommand().equals(resCmd))
+                {
+                    responseFromPeer = new AcceptResponse(id,value,false);
+                    // The accept request was rejected
+                }else if (Command.PREPARE_RESPONSE.getCommand().equals(resCmd))
+                {
+                    responseFromPeer = new PrepareResponse(id,value,true);
+                    // the Prepare request was accepted
+                }else if (Command.ACCEPT_RESPONSE.getCommand().equals(resCmd))
+                {
+                    responseFromPeer = new AcceptResponse(id,value,true);
+                    // the accept request was accepted
+                }
+            }
+
+        }catch(Exception e)
+        {
+            System.err.println("Unable to send msg to " + peer.toString());
+            e.printStackTrace();
+        }finally
+        {
+            if (tcpSocket != null)
+            {
+                try
+                {
+                    tcpSocket.close();
+                }catch(Exception e)
+                {
+                    System.err.println("Unable to close socket");
+                    e.printStackTrace();
+                }
+            }
+
+        }
+
+        return responseFromPeer;
+    }
+
+    /**
+     * Send the request to the peers
+     * @param peers
+     * @return
+     */
+    public List<Response> sendRequest(Request request,List<Server> peers)
+    {
+        List<Response> responses = new ArrayList<Response>();
+
+        for(Server peer: peers)
+        {
+            Response response = sendRequestToPeer(request, peer);
+            responses.add(response);
+        }
+        return responses;
+
+    }
+
 
 
    // Start the paxos algorithm to reserve the value
@@ -40,7 +139,7 @@ public class MessageThread implements Runnable
         request.setId(Utils.getId());
         request.setValue(value);
         // send the prepare request to all peers
-        List<Response> prepareResponses = request.sendRequest(peers);
+        List<Response> prepareResponses = sendRequest(request, peers);
         /**
          * TODO: Parse the prepare responses, then send accept response
          */
@@ -49,11 +148,11 @@ public class MessageThread implements Runnable
     }
 
 
-    private String processRequest(String cmd,String[] tokens)
+    private String processRequest(String accept, String reject, String[] tokens)
     {
         if (tokens.length < 3)
         {
-            return Command.REJECT.getCommand() + " " + ServerThread.getPaxosId() + " " + ServerThread.getPaxosValue();
+            return reject + " " + ServerThread.getPaxosId() + " " + ServerThread.getPaxosValue();
         }
         int id = Integer.parseInt(tokens[1]);
         String value = tokens[2];
@@ -61,19 +160,19 @@ public class MessageThread implements Runnable
         if(ServerThread.getPaxosId() > id)
         {
             // REJECT the request and send the paxos id and value
-            return Command.REJECT.getCommand() + " " + ServerThread.getPaxosId() + " " + ServerThread.getPaxosValue();
+            return reject + " " + ServerThread.getPaxosId() + " " + ServerThread.getPaxosValue();
         }
         // Update the new paxosId and accept the request
         ServerThread.setPaxosId(id);
         ServerThread.setPaxosValue(value);
 
-        return cmd + " " + ServerThread.getPaxosId() + " " + ServerThread.getPaxosValue();
+        return accept + " " + ServerThread.getPaxosId() + " " + ServerThread.getPaxosValue();
 
     }
 
     public String processPrepareRequest(String[] tokens)
     {
-        return processRequest(Command.PREPARE_RESPONSE.getCommand(),tokens);
+        return processRequest(Command.PREPARE_RESPONSE.getCommand(),Command.REJECT_PREPARE.getCommand(),tokens);
     }
 
 
