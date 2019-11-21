@@ -10,8 +10,12 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class ServerThread implements Runnable
 {
@@ -24,8 +28,39 @@ public class ServerThread implements Runnable
     @Getter @Setter(AccessLevel.PUBLIC)
     private List<Server> peers;
 
-    private Lock threadLock;
-    private AtomicBoolean isRunning;
+    // The Paxos Id
+    private static AtomicInteger paxosId = new AtomicInteger(0);
+    // The Paxos value
+    private static String paxosValue;
+
+    private static Lock threadLock = new ReentrantLock();
+    private static AtomicBoolean isRunning = new AtomicBoolean(false);
+
+    public static void setPaxosId(int value)
+    {
+        paxosId.set(value);
+    }
+
+    public static int getPaxosId()
+    {
+        return paxosId.get();
+    }
+
+    public static void setPaxosValue(String value)
+    {
+        threadLock.lock();
+        paxosValue = value;
+        threadLock.unlock();
+    }
+
+    public static String getPaxosValue()
+    {
+        String result;
+        threadLock.lock();
+        result = String.copyValueOf(paxosValue.toCharArray());
+        threadLock.unlock();
+        return result;
+    }
 
     /**
      * Listen for messages from the peers

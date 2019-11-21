@@ -16,6 +16,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MessageThread implements Runnable
 {
@@ -26,6 +27,7 @@ public class MessageThread implements Runnable
 
     @Setter(AccessLevel.PUBLIC)
     List<Server> peers;
+
 
 
 
@@ -47,13 +49,31 @@ public class MessageThread implements Runnable
     }
 
 
+    private String processRequest(String cmd,String[] tokens)
+    {
+        if (tokens.length < 3)
+        {
+            return Command.REJECT.getCommand() + " " + ServerThread.getPaxosId() + " " + ServerThread.getPaxosValue();
+        }
+        int id = Integer.parseInt(tokens[1]);
+        String value = tokens[2];
+        // Compare the id to our current id
+        if(ServerThread.getPaxosId() > id)
+        {
+            // REJECT the request and send the paxos id and value
+            return Command.REJECT.getCommand() + " " + ServerThread.getPaxosId() + " " + ServerThread.getPaxosValue();
+        }
+        // Update the new paxosId and accept the request
+        ServerThread.setPaxosId(id);
+        ServerThread.setPaxosValue(value);
+
+        return cmd + " " + ServerThread.getPaxosId() + " " + ServerThread.getPaxosValue();
+
+    }
+
     public String processPrepareRequest(String[] tokens)
     {
-        /**
-         * TODO: Complete impl
-         */
-        return null;
-
+        return processRequest(Command.PREPARE_RESPONSE.getCommand(),tokens);
     }
 
 
@@ -63,7 +83,6 @@ public class MessageThread implements Runnable
          * TODO: Complete impl
          */
         return null;
-
     }
 
 
