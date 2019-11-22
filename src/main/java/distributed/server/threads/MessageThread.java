@@ -1,6 +1,7 @@
 package distributed.server.threads;
 
 import distributed.server.pojos.Server;
+import distributed.server.propose.Proposer;
 import distributed.server.requests.AcceptRequest;
 import distributed.server.requests.PrepareRequest;
 import distributed.server.requests.Request;
@@ -8,7 +9,6 @@ import distributed.server.responses.AcceptResponse;
 import distributed.server.responses.PrepareResponse;
 import distributed.server.responses.Response;
 import distributed.utils.Command;
-import distributed.utils.Utils;
 import lombok.AccessLevel;
 import lombok.Setter;
 import org.apache.log4j.Logger;
@@ -20,7 +20,6 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class MessageThread implements Runnable
 {
@@ -168,9 +167,13 @@ public class MessageThread implements Runnable
 
 
    // Start the paxos algorithm to reserve the value
-    private String reserveValue(String value)
+    private String paxos(String value)
     {
         logger.debug("Reserving value " + value);
+
+        // Propose the value
+        Proposer proposer = new Proposer(ServerThread.getPaxosId(),value);
+        boolean proposalStatus = proposer.propose(peers);
         // Prepare request
         Request request = new PrepareRequest();
         request.setId(ServerThread.getPaxosId());
@@ -249,7 +252,7 @@ public class MessageThread implements Runnable
             if(tokens.length > 1)
             {
                 String value = tokens[1];
-                return reserveValue(value);
+                return paxos(value);
 
             }
         }else if(Command.PREPARE_REQUEST.getCommand().equals(tokens[0]))
