@@ -104,26 +104,8 @@ public class Proposer
         return responseFromPeer;
     }
 
-    private void updateToGreatestPaxosId(List<Response> responses)
+    private boolean requestAccepted(List<Response> prepareResponses, int numServers)
     {
-        for (Response r: responses)
-        {
-            int id = r.getId();
-            if (id > ServerThread.getPaxosId())
-            {
-                ServerThread.setPaxosId(id);
-                /**
-                 * TODO: Do we need to set the value as well?
-                 */
-            }
-        }
-
-    }
-
-    private boolean requestAccepted(List<Response> prepareResponses, int numPeers)
-    {
-        //True if the majority of peers accepted the prepare
-        int numResponses = prepareResponses.size();
         int numAccepted = 1; // Count our own self acceptance
         for (Response r : prepareResponses)
         {
@@ -132,10 +114,16 @@ public class Proposer
                 continue;
             }
             numAccepted++;
+            int id = r.getId();
+            if(id > ServerThread.getPaxosId())
+            {
+                ServerThread.setPaxosId(id);
+
+            }
         }
 
         // Request accepted if at least half of all the nodes accepted the request
-        if (numAccepted >= (numPeers + 1) / 2)
+        if (numAccepted >= (numServers / 2) + 1)
         {
             return true;
         }
@@ -150,7 +138,7 @@ public class Proposer
      */
     public List<Response> sendRequest(Request request, List<Server> peers)
     {
-        List<Response> responses = new ArrayList<Response>();
+        List<Response> responses = new ArrayList<>();
 
         for (Server peer : peers)
         {
@@ -172,23 +160,28 @@ public class Proposer
         return acceptRequestAccepted;
     }
 
+    /**
+     * Broadcast the prepare request to the servers
+     * @param prepareRequest
+     * @param peers
+     * @return
+     */
+    public List<Response> sendPrepareRequest(PrepareRequest prepareRequest, List<Server> peers)
+    {
+        return sendRequest(prepareRequest, peers);
+    }
+
 
     public boolean propose(List<Server> peers)
     {
         logger.debug("Proposing value " + this.value);
         // send the prepare request to all peers
-        Request prepareRequest = new PrepareRequest();
+        PrepareRequest prepareRequest = new PrepareRequest();
         prepareRequest.setId(ServerThread.getPaxosId());
         prepareRequest.setValue(this.value);
         logger.debug("Sending prepare request to peers");
-        List<Response> prepareResponses = sendRequest(prepareRequest, peers);
-        boolean prepareRequestAccepted = requestAccepted(prepareResponses,peers.size());
-        if(prepareRequestAccepted == false)
-        {
-            // Prepare response was not accepted
-            // Update the id from the responses
-            updateToGreatestPaxosId(prepareResponses);
-        }
-        return prepareRequestAccepted;
+        List<Response> promises = sendPrepareRequest(prepareRequest,peers);
+        boolean promised = requestAccepted(promises,peers.size());
+        return promised;
     }
 }

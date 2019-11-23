@@ -1,5 +1,6 @@
 package distributed.server.threads;
 
+import distributed.server.accept.Acceptor;
 import distributed.server.pojos.Server;
 import distributed.server.propose.Proposer;
 import distributed.utils.Command;
@@ -26,7 +27,7 @@ public class MessageThread implements Runnable
 
 
    // Start the paxos algorithm to reserve the value
-    private String paxos(String value)
+    private String reserveValueUsingPaxos(String value)
     {
         logger.debug("Reserving value " + value);
 
@@ -48,31 +49,17 @@ public class MessageThread implements Runnable
     }
 
 
-    private String processRequest(String accept, String reject, String[] tokens)
-    {
-        if (tokens.length < 3)
-        {
-            return reject + " " + ServerThread.getPaxosId() + " " + ServerThread.getPaxosValue();
-        }
-        int id = Integer.parseInt(tokens[1]);
-        String value = tokens[2];
-        // Compare the id to our current id
-        if(ServerThread.getPaxosId() > id)
-        {
-            // REJECT the request and send the paxos id and value
-            return reject + " " + ServerThread.getPaxosId() + " " + ServerThread.getPaxosValue();
-        }
-        // Update the new paxosId and accept the request
-        ServerThread.setPaxosId(id);
-        ServerThread.setPaxosValue(value);
-
-        return accept + " " + ServerThread.getPaxosId() + " " + ServerThread.getPaxosValue();
-
-    }
-
     public String receivePrepareRequest(String[] tokens)
     {
-        return processRequest(Command.PROMISE.getCommand(),Command.REJECT_PREPARE.getCommand(),tokens);
+        return Acceptor.receivePrepareRequest(tokens);
+    }
+
+    public String receivePromiseRequest(String[] tokens)
+    {
+        /**
+         * TODO: Complete impl
+         */
+        return null;
     }
 
 
@@ -90,11 +77,11 @@ public class MessageThread implements Runnable
         String[] tokens = msg.split("\\s+");
         if(Command.RESERVE.getCommand().equals(tokens[0]))
         {
-            // The client wants us to agree on a value
+            // The client wants us to agree on a value. Start the paxos value
             if(tokens.length > 1)
             {
                 String value = tokens[1];
-                return paxos(value);
+                return reserveValueUsingPaxos(value);
 
             }
         }else if(Command.PREPARE_REQUEST.getCommand().equals(tokens[0]))
@@ -103,9 +90,15 @@ public class MessageThread implements Runnable
 
             if(tokens.length>2)
             {
-               return receivePrepareRequest(tokens) ;
+               return receivePrepareRequest(tokens);
             }
-
+        }
+        else if (Command.PROMISE.getCommand().equals(tokens[0]))
+        {
+            if(tokens.length > 2)
+            {
+                return receivePromiseRequest(tokens);
+            }
         }
         else if(Command.ACCEPT_REQUEST.getCommand().equals(tokens[0]))
         {
@@ -129,7 +122,7 @@ public class MessageThread implements Runnable
             if (inputLine != null && inputLine.length() > 0)
             {
                 String msg = inputLine;
-                logger.debug("Processing message from client: " + msg);
+                logger.debug("Processing message: " + msg);
                 String response = processMessage(msg);
                 // Increment the logical clock on response
                 if(response != null)
