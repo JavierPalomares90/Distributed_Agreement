@@ -121,11 +121,11 @@ public class Proposer
 
     }
 
-    private boolean requestAccepted(List<Response> prepareResponses)
+    private boolean requestAccepted(List<Response> prepareResponses, int numPeers)
     {
         //True if the majority of peers accepted the prepare
         int numResponses = prepareResponses.size();
-        int numAccepted = 0;
+        int numAccepted = 1; // Count our own self acceptance
         for (Response r : prepareResponses)
         {
             if (r == null || r.isResponseAccepted() == false)
@@ -135,7 +135,8 @@ public class Proposer
             numAccepted++;
         }
 
-        if (numAccepted >= (numResponses + 1) / 2)
+        // Request accepted if at least half of all the nodes accepted the request
+        if (numAccepted >= (numPeers + 1) / 2)
         {
             return true;
         }
@@ -171,7 +172,7 @@ public class Proposer
         prepareRequest.setValue(this.value);
         logger.debug("Sending prepare request to peers");
         List<Response> prepareResponses = sendRequest(prepareRequest, peers);
-        boolean prepareRequestAccepted = requestAccepted(prepareResponses);
+        boolean prepareRequestAccepted = requestAccepted(prepareResponses,peers.size());
         if(prepareRequestAccepted == false)
         {
             // Prepare response was not accepted
@@ -188,7 +189,7 @@ public class Proposer
         acceptRequest.setValue(value);
         // send the accept request to all peers
         List<Response> acceptResponses = sendRequest(acceptRequest, peers);
-        boolean acceptRequestAccepted = requestAccepted(acceptResponses);
+        boolean acceptRequestAccepted = requestAccepted(acceptResponses,peers.size());
         if(acceptRequestAccepted == false)
         {
             return Command.REJECT_ACCEPT.getCommand();
