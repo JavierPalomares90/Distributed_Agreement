@@ -1,5 +1,6 @@
 package distributed.server.threads;
 
+import distributed.server.paxos.Paxos;
 import distributed.server.pojos.Server;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -29,9 +30,13 @@ public class ServerThread implements Runnable
     private List<Server> peers;
 
     // The Paxos Id
+    private static Paxos myPaxos = new Paxos();
     private static AtomicInteger paxosId = new AtomicInteger(0);
     // The Paxos value
     private static String paxosValue;
+
+    public static AtomicInteger numPromises = new AtomicInteger(0);
+    public static AtomicInteger numAccepts = new AtomicInteger(0);
 
     private static Lock threadLock = new ReentrantLock();
     private static AtomicBoolean isRunning = new AtomicBoolean(false);
@@ -92,6 +97,7 @@ public class ServerThread implements Runnable
                     MessageThread clientThread = new MessageThread();
                     clientThread.setSocket(socket);
                     clientThread.setPeers(peers);
+                    clientThread.setPaxos(myPaxos);
                     new Thread(clientThread).start();
                 }
             }

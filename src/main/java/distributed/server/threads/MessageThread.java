@@ -1,8 +1,8 @@
 package distributed.server.threads;
 
-import distributed.server.accept.Acceptor;
+import distributed.server.paxos.Paxos;
+import distributed.server.paxos.accept.Acceptor;
 import distributed.server.pojos.Server;
-import distributed.server.propose.Proposer;
 import distributed.utils.Command;
 import lombok.AccessLevel;
 import lombok.Setter;
@@ -25,27 +25,18 @@ public class MessageThread implements Runnable
     @Setter(AccessLevel.PUBLIC)
     List<Server> peers;
 
+    @Setter(AccessLevel.PUBLIC)
+    Paxos paxos;
+
 
    // Start the paxos algorithm to reserve the value
-    private String reserveValueUsingPaxos(String value)
+    private String reserveValue(String value)
     {
-        logger.debug("Reserving value " + value);
-
-        // Phase 1 of Paxos: Propose the value
-        Proposer proposer = new Proposer(value);
-        boolean proposalAccepted = proposer.propose(peers);
-        if(proposalAccepted == false)
-        {
-            return Command.REJECT_PREPARE.getCommand();
-        }
-        // Phase 2 of Paxos: Accept the value
-        boolean accepted = proposer.accept(peers);
-        if(accepted == false)
-        {
-            return Command.REJECT_ACCEPT.getCommand();
-        }
-        // The value is agreed to
-        return Command.AGREE.getCommand() + " " + value;
+        logger.debug("Reserving value using paxos: " + value);
+        paxos.setValue(value);
+        paxos.setServers(peers);
+        new Thread(paxos).start();
+        return paxos.reserveValue(value,peers);
     }
 
 
@@ -54,21 +45,44 @@ public class MessageThread implements Runnable
         return Acceptor.receivePrepareRequest(tokens);
     }
 
-    public String receivePromiseRequest(String[] tokens)
+    public synchronized String receivePromiseRequest(String[] tokens)
     {
-        /**
-         * TODO: Complete impl
-         */
-        return null;
+        int id = Integer.parseInt(tokens[1]);
+        if(id > ServerThread.getPaxosId())
+        {
+            ServerThread.setPaxosId(id);
+        }
+        ServerThread.numPromises.getAndIncrement();
+        int numServers = peers.size() + 1;
+        if(ServerThread.numPromises.get() > (numServers/2) + 1)
+        {
+            // We've received enough promises. Can continue to phase 2 of paxos
+            paxos.notifyAll();
+        }
+        return "Moving onto phase 2 of paxos";
     }
 
 
     public String receiveAcceptRequest(String[] tokens)
     {
-        /**
-         * TODO: Complete impl
-         */
-        return null;
+        int id = Integer.parseInt(tokens[1]);
+        if(id > ServerThread.getPaxosId())
+        {
+            return Command.ACCEPT.getCommand();
+        }
+        return Command.REJECT_ACCEPT.getCommand();
+    }
+
+    public synchronized String receiveAcceptResponse(String[] tokens)
+    {
+        ServerThread.numAccepts.getAndIncrement();
+        int numServers = peers.size() + 1;
+        if(ServerThread.numAccepts.get() > (numServers/2) + 1)
+        {
+            // We've received enough accepts. can agree on a value
+            paxos.notifyAll();
+        }
+        return "Agreed to value";
     }
 
 
@@ -81,20 +95,20 @@ public class MessageThread implements Runnable
             if(tokens.length > 1)
             {
                 String value = tokens[1];
-                return reserveValueUsingPaxos(value);
+                return reserveValue(value);
 
             }
         }else if(Command.PREPARE_REQUEST.getCommand().equals(tokens[0]))
         {
            // A peer sent a prepare request with a value
-
-            if(tokens.length>2)
+            if(tokens.length > 2)
             {
                return receivePrepareRequest(tokens);
             }
         }
         else if (Command.PROMISE.getCommand().equals(tokens[0]))
         {
+            // A peer promised to accept our prepare request
             if(tokens.length > 2)
             {
                 return receivePromiseRequest(tokens);
@@ -102,10 +116,16 @@ public class MessageThread implements Runnable
         }
         else if(Command.ACCEPT_REQUEST.getCommand().equals(tokens[0]))
         {
+            // A peer sent an accept request with a value
             if(tokens.length>2)
             {
                 return receiveAcceptRequest(tokens) ;
             }
+        }
+        else if(Command.ACCEPT.getCommand().equals(tokens[0]))
+        {
+            // A peer sent a response to our accept request
+            receiveAcceptResponse(tokens);
 
         }
         return "Unable to process msg " + msg;

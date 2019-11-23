@@ -1,4 +1,4 @@
-package distributed.server.accept;
+package distributed.server.paxos.accept;
 
 import distributed.server.threads.ServerThread;
 import distributed.utils.Command;

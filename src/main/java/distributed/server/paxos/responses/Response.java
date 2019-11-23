@@ -1,4 +1,4 @@
-package distributed.server.responses;
+package distributed.server.paxos.responses;
 
 import lombok.Data;
 

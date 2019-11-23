@@ -1,4 +1,4 @@
-package distributed.server.requests;
+package distributed.server.paxos.requests;
 
 import distributed.utils.Command;
 
