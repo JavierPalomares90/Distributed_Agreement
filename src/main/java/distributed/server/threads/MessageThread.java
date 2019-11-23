@@ -2,12 +2,6 @@ package distributed.server.threads;
 
 import distributed.server.pojos.Server;
 import distributed.server.propose.Proposer;
-import distributed.server.requests.AcceptRequest;
-import distributed.server.requests.PrepareRequest;
-import distributed.server.requests.Request;
-import distributed.server.responses.AcceptResponse;
-import distributed.server.responses.PrepareResponse;
-import distributed.server.responses.Response;
 import distributed.utils.Command;
 import lombok.AccessLevel;
 import lombok.Setter;
@@ -18,7 +12,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.List;
 
 public class MessageThread implements Runnable
@@ -77,13 +70,13 @@ public class MessageThread implements Runnable
 
     }
 
-    public String processPrepareRequest(String[] tokens)
+    public String receivePrepareRequest(String[] tokens)
     {
         return processRequest(Command.PREPARE_RESPONSE.getCommand(),Command.REJECT_PREPARE.getCommand(),tokens);
     }
 
 
-    public String processAcceptRequest(String[] tokens)
+    public String receiveAcceptRequest(String[] tokens)
     {
         /**
          * TODO: Complete impl
@@ -97,6 +90,7 @@ public class MessageThread implements Runnable
         String[] tokens = msg.split("\\s+");
         if(Command.RESERVE.getCommand().equals(tokens[0]))
         {
+            // The client wants us to agree on a value
             if(tokens.length > 1)
             {
                 String value = tokens[1];
@@ -105,10 +99,11 @@ public class MessageThread implements Runnable
             }
         }else if(Command.PREPARE_REQUEST.getCommand().equals(tokens[0]))
         {
+           // A peer sent a prepare request with a value
 
             if(tokens.length>2)
             {
-               return processPrepareRequest(tokens) ;
+               return receivePrepareRequest(tokens) ;
             }
 
         }
@@ -116,7 +111,7 @@ public class MessageThread implements Runnable
         {
             if(tokens.length>2)
             {
-                return processAcceptRequest(tokens) ;
+                return receiveAcceptRequest(tokens) ;
             }
 
         }
@@ -134,7 +129,7 @@ public class MessageThread implements Runnable
             if (inputLine != null && inputLine.length() > 0)
             {
                 String msg = inputLine;
-                logger.debug("Processing message from client");
+                logger.debug("Processing message from client: " + msg);
                 String response = processMessage(msg);
                 // Increment the logical clock on response
                 if(response != null)
