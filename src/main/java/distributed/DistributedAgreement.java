@@ -33,7 +33,7 @@ public class DistributedAgreement
 
     public static void main(String[] args)
     {
-        int serverId = Integer.parseInt(args[1]);
+        int serverId = Integer.parseInt(args[0]);
         logger.debug("Starting serverId: " + serverId);
         List<Server> peers = Utils.getHosts();
         Server host = getSelf(serverId,peers);
@@ -41,6 +41,8 @@ public class DistributedAgreement
         // Spawn off a thread to handle messages from client
         ServerThread serverThread = new ServerThread();
         serverThread.setIpAddress(host.getIpAddress());
+        // Remove self from the list of hosts
+        peers.remove(host);
         serverThread.setPeers(peers);
         serverThread.setPort(host.getPort());
         new Thread(serverThread).start();

@@ -10,6 +10,7 @@ import distributed.server.responses.Response;
 import distributed.server.threads.ServerThread;
 import distributed.utils.Command;
 import lombok.Data;
+import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -20,7 +21,9 @@ import java.util.List;
 
 public class Proposer
 {
+    private static Logger logger = Logger.getLogger(Proposer.class);
     private String value;
+
 
     public Proposer(String value)
     {
@@ -83,8 +86,7 @@ public class Proposer
 
         } catch (Exception e)
         {
-            System.err.println("Unable to send msg to " + peer.toString());
-            e.printStackTrace();
+            logger.error("Unable to send msg to " + peer.toString(),e);
         } finally
         {
             if (tcpSocket != null)
@@ -94,8 +96,7 @@ public class Proposer
                     tcpSocket.close();
                 } catch (Exception e)
                 {
-                    System.err.println("Unable to close socket");
-                    e.printStackTrace();
+                    logger.error("Unable to close socket",e);
                 }
             }
 
@@ -163,10 +164,12 @@ public class Proposer
 
     public String propose(List<Server> peers)
     {
+        logger.debug("Proposing value " + this.value);
         // send the prepare request to all peers
         Request prepareRequest = new PrepareRequest();
         prepareRequest.setId(ServerThread.getPaxosId());
         prepareRequest.setValue(this.value);
+        logger.debug("Sending prepare request to peers");
         List<Response> prepareResponses = sendRequest(prepareRequest, peers);
         boolean prepareRequestAccepted = requestAccepted(prepareResponses);
         if(prepareRequestAccepted == false)
