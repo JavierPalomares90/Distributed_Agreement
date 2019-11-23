@@ -13,6 +13,14 @@
     <artifactId>distributed-agreement</artifactId>
     <version>1.0-SNAPSHOT</version>
 
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+        </resources>
+    </build>
+
     <dependencies>
         <dependency>
             <groupId>log4j</groupId>

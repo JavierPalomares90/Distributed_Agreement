@@ -108,7 +108,13 @@ public class Client
 
     public static void main(String[] args)
     {
-        List<Server> servers = Utils.getHosts();
+        if(args.length < 2)
+        {
+            logger.error("Usage: <hostsFilePath>" );
+            System.exit(-1);
+        }
+
+        List<Server> servers = Utils.getHosts(args[0]);
         Scanner sc = new Scanner(System.in);
         while (sc.hasNextLine())
         {

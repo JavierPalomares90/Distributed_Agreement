@@ -33,14 +33,15 @@ public class DistributedAgreement
 
     public static void main(String[] args)
     {
-        if(args.length < 1)
+        if(args.length < 2)
         {
-            logger.error("Specify the serverId");
+            logger.error("Usage: <hostsFilePath> <serverId>");
             System.exit(-1);
         }
-        int serverId = Integer.parseInt(args[0]);
+        String hostsFilePath = args[0];
+        int serverId = Integer.parseInt(args[1]);
         logger.debug("Starting serverId: " + serverId);
-        List<Server> peers = Utils.getHosts();
+        List<Server> peers = Utils.getHosts(hostsFilePath);
         if(peers == null)
         {
             logger.error("Unable to get hosts");
