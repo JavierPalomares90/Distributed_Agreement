@@ -33,9 +33,19 @@ public class DistributedAgreement
 
     public static void main(String[] args)
     {
+        if(args.length < 1)
+        {
+            logger.error("Specify the serverId");
+            System.exit(-1);
+        }
         int serverId = Integer.parseInt(args[0]);
         logger.debug("Starting serverId: " + serverId);
         List<Server> peers = Utils.getHosts();
+        if(peers == null)
+        {
+            logger.error("Unable to get hosts");
+            System.exit(-1);
+        }
         Server host = getSelf(serverId,peers);
 
         // Spawn off a thread to handle messages from client

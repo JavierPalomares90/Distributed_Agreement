@@ -32,9 +32,6 @@ public class MessageThread implements Runnable
     List<Server> peers;
 
 
-
-
-
    // Start the paxos algorithm to reserve the value
     private String paxos(String value)
     {
