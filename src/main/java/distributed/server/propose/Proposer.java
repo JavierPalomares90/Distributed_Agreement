@@ -5,11 +5,10 @@ import distributed.server.requests.AcceptRequest;
 import distributed.server.requests.PrepareRequest;
 import distributed.server.requests.Request;
 import distributed.server.responses.AcceptResponse;
-import distributed.server.responses.PrepareResponse;
+import distributed.server.responses.PromiseResponse;
 import distributed.server.responses.Response;
 import distributed.server.threads.ServerThread;
 import distributed.utils.Command;
-import lombok.Data;
 import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
@@ -67,17 +66,17 @@ public class Proposer
                 if (Command.REJECT_PREPARE.getCommand().equals(resCmd))
                 {
                     // The Prepare request was rejected
-                    responseFromPeer = new PrepareResponse(id, value, false);
+                    responseFromPeer = new PromiseResponse(id, value, false);
 
                 } else if (Command.REJECT_ACCEPT.getCommand().equals(resCmd))
                 {
                     responseFromPeer = new AcceptResponse(id, value, false);
                     // The accept request was rejected
-                } else if (Command.PREPARE_RESPONSE.getCommand().equals(resCmd))
+                } else if (Command.PROMISE.getCommand().equals(resCmd))
                 {
-                    responseFromPeer = new PrepareResponse(id, value, true);
+                    responseFromPeer = new PromiseResponse(id, value, true);
                     // the Prepare request was accepted
-                } else if (Command.ACCEPT_RESPONSE.getCommand().equals(resCmd))
+                } else if (Command.ACCEPT.getCommand().equals(resCmd))
                 {
                     responseFromPeer = new AcceptResponse(id, value, true);
                     // the accept request was accepted

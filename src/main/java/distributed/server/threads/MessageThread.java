@@ -72,7 +72,7 @@ public class MessageThread implements Runnable
 
     public String receivePrepareRequest(String[] tokens)
     {
-        return processRequest(Command.PREPARE_RESPONSE.getCommand(),Command.REJECT_PREPARE.getCommand(),tokens);
+        return processRequest(Command.PROMISE.getCommand(),Command.REJECT_PREPARE.getCommand(),tokens);
     }
 
 

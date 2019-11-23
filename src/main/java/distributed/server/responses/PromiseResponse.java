@@ -2,9 +2,9 @@ package distributed.server.responses;
 
 import distributed.utils.Command;
 
-public class AcceptResponse extends Response
+public class PromiseResponse extends Response
 {
-    public AcceptResponse(int id, String value,boolean accepted)
+    public PromiseResponse(int id, String value, boolean accepted)
     {
         super(id,value,accepted);
     }
@@ -12,7 +12,6 @@ public class AcceptResponse extends Response
     @Override
     public String toString()
     {
-        return Command.ACCEPT + " " + this.getId() + " " + this.getValue();
+        return Command.PROMISE + " " + this.getId() + " " + this.getValue();
     }
-
 }
