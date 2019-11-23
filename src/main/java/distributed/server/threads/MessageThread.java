@@ -40,10 +40,21 @@ public class MessageThread implements Runnable
     {
         logger.debug("Reserving value " + value);
 
-        // Propose the value
+        // Phase 1 of Paxos: Propose the value
         Proposer proposer = new Proposer(value);
-        return proposer.propose(peers);
-
+        boolean proposalAccepted = proposer.propose(peers);
+        if(proposalAccepted == false)
+        {
+            return Command.REJECT_PREPARE.getCommand();
+        }
+        // Phase 2 of Paxos: Accept the value
+        boolean accepted = proposer.accept(peers);
+        if(accepted == false)
+        {
+            return Command.REJECT_ACCEPT.getCommand();
+        }
+        // The value is agreed to
+        return Command.AGREE.getCommand() + " " + value;
     }
 
 

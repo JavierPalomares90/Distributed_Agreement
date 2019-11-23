@@ -162,8 +162,19 @@ public class Proposer
 
     }
 
+    public boolean accept(List<Server> peers)
+    {
+        Request acceptRequest = new AcceptRequest();
+        acceptRequest.setId(ServerThread.getPaxosId());
+        acceptRequest.setValue(value);
+        // send the accept request to all peers
+        List<Response> acceptResponses = sendRequest(acceptRequest, peers);
+        boolean acceptRequestAccepted = requestAccepted(acceptResponses,peers.size());
+        return acceptRequestAccepted;
+    }
 
-    public String propose(List<Server> peers)
+
+    public boolean propose(List<Server> peers)
     {
         logger.debug("Proposing value " + this.value);
         // send the prepare request to all peers
@@ -178,25 +189,7 @@ public class Proposer
             // Prepare response was not accepted
             // Update the id from the responses
             updateToGreatestPaxosId(prepareResponses);
-            return Command.REJECT_PREPARE.getCommand();
         }
-        // Prepare requests is good, now send accept request
-        /**
-         * TODO: Parse the prepare responses, then send accept response
-         */
-        Request acceptRequest = new AcceptRequest();
-        acceptRequest.setId(ServerThread.getPaxosId());
-        acceptRequest.setValue(value);
-        // send the accept request to all peers
-        List<Response> acceptResponses = sendRequest(acceptRequest, peers);
-        boolean acceptRequestAccepted = requestAccepted(acceptResponses,peers.size());
-        if(acceptRequestAccepted == false)
-        {
-            return Command.REJECT_ACCEPT.getCommand();
-        }
-        // The value is agreed to
-        return Command.AGREE.getCommand() + " " + value;
-
-
+        return prepareRequestAccepted;
     }
 }
