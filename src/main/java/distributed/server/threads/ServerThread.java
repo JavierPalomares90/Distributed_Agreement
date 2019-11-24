@@ -30,7 +30,6 @@ public class ServerThread implements Runnable
     private List<Server> peers;
 
     // The Paxos Id
-    private static Paxos myPaxos = new Paxos();
     private static AtomicInteger paxosId = new AtomicInteger(0);
     // The Paxos value
     private static String paxosValue;
@@ -39,6 +38,10 @@ public class ServerThread implements Runnable
     public static AtomicInteger numAccepts = new AtomicInteger(0);
 
     private static Lock threadLock = new ReentrantLock();
+    // Locks for phase 1 and phase 2 of paxos
+    private static Lock phase1Lock = new ReentrantLock();
+    private static Lock phase2Lock = new ReentrantLock();
+
     private static AtomicBoolean isRunning = new AtomicBoolean(false);
 
     public static void setPaxosId(int value)
@@ -73,7 +76,7 @@ public class ServerThread implements Runnable
     public void run()
     {
         this.isRunning.getAndSet(true);
-        logger.debug("Starting server thread");
+        logger.debug("Starting server thread with ip: " + this.ipAddress + " port: " + this.port);
         ServerSocket tcpServerSocket = null;
         try
         {
@@ -97,7 +100,8 @@ public class ServerThread implements Runnable
                     MessageThread clientThread = new MessageThread();
                     clientThread.setSocket(socket);
                     clientThread.setPeers(peers);
-                    clientThread.setPaxos(myPaxos);
+                    clientThread.setPhase1Lock(phase1Lock);
+                    clientThread.setPhase2Lock(phase2Lock);
                     new Thread(clientThread).start();
                 }
             }

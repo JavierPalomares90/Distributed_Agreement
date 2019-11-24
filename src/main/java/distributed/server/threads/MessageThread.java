@@ -14,6 +14,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.List;
+import java.util.concurrent.locks.Lock;
 
 public class MessageThread implements Runnable
 {
@@ -26,15 +27,21 @@ public class MessageThread implements Runnable
     List<Server> peers;
 
     @Setter(AccessLevel.PUBLIC)
-    Paxos paxos;
+    Lock phase1Lock;
+
+    @Setter(AccessLevel.PUBLIC)
+    Lock phase2Lock;
 
 
    // Start the paxos algorithm to reserve the value
     private String reserveValue(String value)
     {
         logger.debug("Reserving value using paxos: " + value);
+        Paxos paxos = new Paxos();
         paxos.setValue(value);
         paxos.setServers(peers);
+        paxos.setPhase1Lock(phase1Lock);
+        paxos.setPhase2Lock(phase2Lock);
         new Thread(paxos).start();
         return paxos.reserveValue(value,peers);
     }
@@ -57,7 +64,7 @@ public class MessageThread implements Runnable
         if(ServerThread.numPromises.get() > (numServers/2) + 1)
         {
             // We've received enough promises. Can continue to phase 2 of paxos
-            paxos.notifyAll();
+            phase1Lock.notifyAll();
         }
         return "Moving onto phase 2 of paxos";
     }
@@ -80,7 +87,7 @@ public class MessageThread implements Runnable
         if(ServerThread.numAccepts.get() > (numServers/2) + 1)
         {
             // We've received enough accepts. can agree on a value
-            paxos.notifyAll();
+            phase2Lock.notifyAll();
         }
         return "Agreed to value";
     }

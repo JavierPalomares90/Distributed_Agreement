@@ -3,10 +3,13 @@ package distributed.server.paxos;
 import distributed.server.paxos.propose.Proposer;
 import distributed.server.pojos.Server;
 import distributed.utils.Command;
+import lombok.AccessLevel;
 import lombok.Data;
+import lombok.Setter;
 import org.apache.log4j.Logger;
 
 import java.util.List;
+import java.util.concurrent.locks.Lock;
 
 @Data
 public class Paxos implements Runnable
@@ -16,42 +19,47 @@ public class Paxos implements Runnable
     private String value;
     private List<Server> servers;
 
+    @Setter(AccessLevel.PUBLIC)
+    Lock phase1Lock;
+
+    @Setter(AccessLevel.PUBLIC)
+    Lock phase2Lock;
+
     // Start the paxos algorithm to reserve the value
-    public synchronized String reserveValue(String value, List<Server> servers)
+    public String reserveValue(String value, List<Server> servers)
     {
         logger.debug("Reserving value " + value);
 
         // Phase 1 of Paxos: Propose the value
         Proposer proposer = new Proposer(value);
-        boolean proposalAccepted = proposer.propose(servers);
-        if(proposalAccepted == false)
-        {
-            return Command.REJECT_PREPARE.getCommand();
-        }
+        proposer.propose(servers);
         // Wait till we get enough promises to move onto phase 2
-        logger.debug("Waiting for phase 2");
-        try
+        synchronized(phase1Lock)
         {
-            this.wait();
-        } catch (InterruptedException e)
-        {
-            logger.error("Unable to wait for phase 2",e);
+            logger.debug("Waiting for phase 2");
+            try
+            {
+                phase1Lock.wait();
+            } catch (InterruptedException e)
+            {
+                logger.error("Unable to wait for phase 2",e);
+            }
         }
         logger.debug("Starting phase 2");
         // Phase 2 of Paxos: Accept the value
-        boolean accepted = proposer.accept(servers);
-        if(accepted == false)
-        {
-            return Command.REJECT_ACCEPT.getCommand();
-        }
+        proposer.accept(servers);
         // Wait till we get enough accepts to agree on a value
         logger.debug("Waiting for value agreement");
-        try
+        synchronized (phase2Lock)
         {
-            this.wait();
-        } catch (InterruptedException e)
-        {
-            logger.error("Unable to wait for value agreement",e);
+            try
+            {
+                phase2Lock.wait();
+            } catch (InterruptedException e)
+            {
+                logger.error("Unable to wait for value agreement",e);
+            }
+
         }
         logger.debug("Agreed to value");
         // The value is agreed to
