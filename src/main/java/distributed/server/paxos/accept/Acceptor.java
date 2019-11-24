@@ -12,7 +12,7 @@ public class Acceptor
     {
         if (tokens.length < 3)
         {
-            return Command.REJECT_PREPARE.getCommand() + " " + ServerThread.getPaxosId() + " " + ServerThread.getPaxosValue();
+            return Command.REJECT_PREPARE.getCommand() + " " + ServerThread.getPaxosId() + " " + ServerThread.getPaxosValue() + "\n";
         }
         int id = Integer.parseInt(tokens[1]);
         String value = tokens[2];
@@ -25,11 +25,11 @@ public class Acceptor
             ServerThread.setPaxosValue(value);
 
             logger.debug("Promising to request with id " + id + " value " + value);
-            return Command.PROMISE.getCommand() + " " + ServerThread.getPaxosId() + " " + ServerThread.getPaxosValue();
+            return Command.PROMISE.getCommand() + " " + ServerThread.getPaxosId() + " " + ServerThread.getPaxosValue() + "\n";
         }
         logger.debug("Rejecting prepare request with id " + id + " value " + value);
         // REJECT the request and send the paxos id and value
-        return Command.REJECT_PREPARE.getCommand() + " " + ServerThread.getPaxosId() + " " + ServerThread.getPaxosValue();
+        return Command.REJECT_PREPARE.getCommand() + " " + ServerThread.getPaxosId() + " " + ServerThread.getPaxosValue() + "\n";
 
     }
 

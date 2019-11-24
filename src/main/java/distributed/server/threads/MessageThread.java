@@ -42,8 +42,16 @@ public class MessageThread implements Runnable
         paxos.setServers(peers);
         paxos.setPhase1Lock(phase1Lock);
         paxos.setPhase2Lock(phase2Lock);
-        new Thread(paxos).start();
-        return paxos.reserveValue(value,peers);
+        Thread paxosThread = new Thread(paxos);
+        paxosThread.start();
+        try
+        {
+            paxosThread.join();
+        } catch (InterruptedException e)
+        {
+            logger.error("Unable to wait for paxos thread to finish",e);
+        }
+        return "Value " + value + " is reserved";
     }
 
 

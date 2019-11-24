@@ -1,6 +1,5 @@
 package distributed.server.threads;
 
-import distributed.server.paxos.Paxos;
 import distributed.server.pojos.Server;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -11,10 +10,8 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -44,6 +41,11 @@ public class ServerThread implements Runnable
 
     private static AtomicBoolean isRunning = new AtomicBoolean(false);
 
+    public static synchronized int incrementPaxosId()
+    {
+        return paxosId.incrementAndGet();
+    }
+
     public static void setPaxosId(int value)
     {
         paxosId.set(value);
@@ -57,12 +59,16 @@ public class ServerThread implements Runnable
     public static void setPaxosValue(String value)
     {
         threadLock.lock();
-        paxosValue = value;
+        paxosValue = String.copyValueOf(value.toCharArray());
         threadLock.unlock();
     }
 
     public static String getPaxosValue()
     {
+        if (paxosValue == null)
+        {
+            return null;
+        }
         String result;
         threadLock.lock();
         result = String.copyValueOf(paxosValue.toCharArray());
@@ -96,7 +102,6 @@ public class ServerThread implements Runnable
                 if(socket != null)
                 {
                     // Spawn off a new thread to process messages from this client
-                    paxosId.getAndIncrement();
                     MessageThread clientThread = new MessageThread();
                     clientThread.setSocket(socket);
                     clientThread.setPeers(peers);

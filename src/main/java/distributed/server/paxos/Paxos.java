@@ -2,6 +2,7 @@ package distributed.server.paxos;
 
 import distributed.server.paxos.propose.Proposer;
 import distributed.server.pojos.Server;
+import distributed.server.threads.ServerThread;
 import distributed.utils.Command;
 import lombok.AccessLevel;
 import lombok.Data;
@@ -28,7 +29,9 @@ public class Paxos implements Runnable
     // Start the paxos algorithm to reserve the value
     public String reserveValue(String value, List<Server> servers)
     {
-        logger.debug("Reserving value " + value);
+        // Increment the paxos Id
+        int id = ServerThread.incrementPaxosId();
+        logger.debug("Reserving value " + value + " with id " + id);
 
         // Phase 1 of Paxos: Propose the value
         Proposer proposer = new Proposer(value);

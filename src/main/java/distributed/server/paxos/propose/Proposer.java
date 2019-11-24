@@ -34,6 +34,7 @@ public class Proposer
      */
     public void sendRequestToPeer(Request request, Server peer)
     {
+        logger.debug("Sending request " + request.toString() + " to peer" + peer);
         String command = request.toString();
         // Send the command over TCP
         Socket tcpSocket = null;
@@ -45,7 +46,7 @@ public class Proposer
             PrintWriter outputWriter = new PrintWriter(tcpSocket.getOutputStream(), true);
             BufferedReader inputReader = new BufferedReader(new InputStreamReader(tcpSocket.getInputStream()));
             // Write the message
-            outputWriter.write(command + "\n");
+            outputWriter.write(command+"\n");
             outputWriter.flush();
             // Don't wait for the response from the peer
 
