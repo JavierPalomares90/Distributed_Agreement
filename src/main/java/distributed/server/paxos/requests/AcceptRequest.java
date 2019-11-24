@@ -7,7 +7,7 @@ public class AcceptRequest extends  Request
     @Override
     public String toString()
     {
-        return Command.ACCEPT_REQUEST + " " + this.getId() + " " + this.getValue();
+        return Command.ACCEPT_REQUEST + " " + this.getId() + " " + this.getValue() + "\n";
     }
 
 

@@ -12,7 +12,7 @@ public class AcceptResponse extends Response
     @Override
     public String toString()
     {
-        return Command.ACCEPT + " " + this.getId() + " " + this.getValue();
+        return Command.ACCEPT + " " + this.getId() + " " + this.getValue() + "\n";
     }
 
 }

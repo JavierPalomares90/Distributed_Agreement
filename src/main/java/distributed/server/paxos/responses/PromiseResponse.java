@@ -12,6 +12,6 @@ public class PromiseResponse extends Response
     @Override
     public String toString()
     {
-        return Command.PROMISE + " " + this.getId() + " " + this.getValue();
+        return Command.PROMISE + " " + this.getId() + " " + this.getValue() + "\n";
     }
 }
