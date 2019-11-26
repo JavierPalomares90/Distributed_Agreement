@@ -10,6 +10,7 @@ import lombok.Setter;
 import org.apache.log4j.Logger;
 
 import java.util.List;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
 @Data
@@ -21,47 +22,74 @@ public class Paxos implements Runnable
     private List<Server> servers;
 
     @Setter(AccessLevel.PUBLIC)
-    Lock phase1Lock;
+    Condition phase1Condition;
 
     @Setter(AccessLevel.PUBLIC)
-    Lock phase2Lock;
+    Condition phase2Condition;
+
+    @Setter(AccessLevel.PUBLIC)
+    ServerThread serverThread;
+
+    @Setter(AccessLevel.PUBLIC)
+    Lock lock;
 
     // Start the paxos algorithm to reserve the value
     public String reserveValue(String value, List<Server> servers)
     {
+        // Incremeent the paxos id
+        int id =  this.serverThread.getPaxosId().incrementAndGet();
+
         // Increment the paxos Id
-        int id = ServerThread.incrementPaxosId();
         logger.debug("Reserving value " + value + " with id " + id);
 
+        // Servers list doesn't include "this" server
+        int numServers = servers.size() + 1;
+
         // Phase 1 of Paxos: Propose the value
-        Proposer proposer = new Proposer(value);
+        Proposer proposer = new Proposer();
+        proposer.setId(id);
+        proposer.setValue(value);
+        proposer.setServerThread(this.serverThread);
         proposer.propose(servers);
         // Wait till we get enough promises to move onto phase 2
-        synchronized(phase1Lock)
+        try
         {
-            logger.debug("Waiting for phase 2");
-            try
+            lock.lock();
+            while(serverThread.getNumPromises().get() < (numServers / 2 ) + 1)
             {
-                phase1Lock.wait();
-            } catch (InterruptedException e)
-            {
-                logger.error("Unable to wait for phase 2",e);
+
+                phase1Condition.await();
             }
+
+        } catch (InterruptedException e)
+        {
+            logger.error("Unale to await for promises",e);
+        }finally
+        {
+            lock.unlock();
+
         }
+
         logger.debug("Starting phase 2");
         // Phase 2 of Paxos: Accept the value
         proposer.accept(servers);
         // Wait till we get enough accepts to agree on a value
         logger.debug("Waiting for value agreement");
-        synchronized (phase2Lock)
+        try
         {
-            try
+            lock.lock();
+            while(serverThread.getNumAccepts().get() < (numServers / 2 ) + 1)
             {
-                phase2Lock.wait();
-            } catch (InterruptedException e)
-            {
-                logger.error("Unable to wait for value agreement",e);
+
+                phase2Condition.await();
             }
+
+        } catch (InterruptedException e)
+        {
+            logger.error("Unale to await for accepts",e);
+        }finally
+        {
+            lock.unlock();
 
         }
         logger.debug("Agreed to value");

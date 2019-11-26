@@ -12,6 +12,7 @@ import java.net.Socket;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -26,44 +27,75 @@ public class ServerThread implements Runnable
     @Getter @Setter(AccessLevel.PUBLIC)
     private List<Server> peers;
 
+
+    @Getter @Setter(AccessLevel.PRIVATE)
+    private AtomicInteger numPromises;
+    @Getter @Setter(AccessLevel.PRIVATE)
+    private AtomicInteger numAccepts;
+
     // The Paxos Id
-    private static AtomicInteger paxosId = new AtomicInteger(0);
+    @Getter @Setter(AccessLevel.PUBLIC)
+    private AtomicInteger paxosId;
     // The Paxos value
-    private static String paxosValue;
+    @Getter @Setter(AccessLevel.PUBLIC)
+    private String paxosValue;
 
-    public static AtomicInteger numPromises = new AtomicInteger(0);
-    public static AtomicInteger numAccepts = new AtomicInteger(0);
+    private final Lock threadLock;
+    // Conditionals to wait for promises and accepts from a majority
+    private final Condition waitForPromises;
+    private final Condition waitForAccepts;
 
-    private static Lock threadLock = new ReentrantLock();
-    // Locks for phase 1 and phase 2 of paxos
-    private static Lock phase1Lock = new ReentrantLock();
-    private static Lock phase2Lock = new ReentrantLock();
-
-    private static AtomicBoolean isRunning = new AtomicBoolean(false);
-
-    public static synchronized int incrementPaxosId()
+    public ServerThread()
     {
-        return paxosId.incrementAndGet();
+        paxosId = new AtomicInteger(0);
+        threadLock = new ReentrantLock();
+
+        waitForPromises = threadLock.newCondition();
+        waitForAccepts = threadLock.newCondition();
     }
 
-    public static void setPaxosId(int value)
+    public void incrementNumPromises()
     {
-        paxosId.set(value);
+        int numPromises = this.numPromises.incrementAndGet();
+        int numServers = this.peers.size() + 1;
+        if(numPromises >= (numServers/2) + 1)
+        {
+            threadLock.lock();
+            synchronized (waitForPromises)
+            {
+                waitForPromises.notifyAll();
+
+            }
+            threadLock.unlock();
+        }
     }
 
-    public static int getPaxosId()
+    public void incrementNumAccepts()
     {
-        return paxosId.get();
+        int numAccepts = this.numAccepts.incrementAndGet();
+        int numServers = this.peers.size() + 1;
+        if(numAccepts >= (numServers/2) + 1)
+        {
+            threadLock.lock();
+            synchronized (waitForAccepts)
+            {
+                waitForAccepts.notifyAll();
+            }
+            threadLock.unlock();
+        }
     }
 
-    public static void setPaxosValue(String value)
+
+    private AtomicBoolean isRunning = new AtomicBoolean(false);
+
+    public void setPaxosValue(String value)
     {
         threadLock.lock();
         paxosValue = String.copyValueOf(value.toCharArray());
         threadLock.unlock();
     }
 
-    public static String getPaxosValue()
+    public String getPaxosValue()
     {
         if (paxosValue == null)
         {
@@ -84,6 +116,8 @@ public class ServerThread implements Runnable
         this.isRunning.getAndSet(true);
         logger.debug("Starting server thread with ip: " + this.ipAddress + " port: " + this.port);
         ServerSocket tcpServerSocket = null;
+        numPromises = new AtomicInteger(0);
+        numAccepts = new AtomicInteger(0);
         try
         {
             tcpServerSocket = new ServerSocket(this.port);
@@ -105,8 +139,10 @@ public class ServerThread implements Runnable
                     MessageThread clientThread = new MessageThread();
                     clientThread.setSocket(socket);
                     clientThread.setPeers(peers);
-                    clientThread.setPhase1Lock(phase1Lock);
-                    clientThread.setPhase2Lock(phase2Lock);
+                    clientThread.setPhase1Condition(waitForPromises);
+                    clientThread.setPhase2Condition(waitForAccepts);
+                    clientThread.setServerThread(this);
+                    clientThread.setLock(threadLock);
                     new Thread(clientThread).start();
                 }
             }

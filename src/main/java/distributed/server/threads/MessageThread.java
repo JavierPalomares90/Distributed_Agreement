@@ -14,6 +14,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.List;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
 public class MessageThread implements Runnable
@@ -21,16 +22,22 @@ public class MessageThread implements Runnable
     private static Logger logger = Logger.getLogger(MessageThread.class);
 
     @Setter(AccessLevel.PUBLIC)
-    Socket socket;
+    private Socket socket;
 
     @Setter(AccessLevel.PUBLIC)
-    List<Server> peers;
+    private ServerThread serverThread;
 
     @Setter(AccessLevel.PUBLIC)
-    Lock phase1Lock;
+    private List<Server> peers;
 
     @Setter(AccessLevel.PUBLIC)
-    Lock phase2Lock;
+    private Condition phase1Condition;
+
+    @Setter(AccessLevel.PUBLIC)
+    private Condition phase2Condition;
+
+    @Setter(AccessLevel.PUBLIC)
+    private Lock lock;
 
 
    // Start the paxos algorithm to reserve the value
@@ -39,65 +46,47 @@ public class MessageThread implements Runnable
         logger.debug("Reserving value using paxos: " + value);
         Paxos paxos = new Paxos();
         paxos.setValue(value);
-        paxos.setServers(peers);
-        paxos.setPhase1Lock(phase1Lock);
-        paxos.setPhase2Lock(phase2Lock);
+        paxos.setServers(this.peers);
+        paxos.setPhase1Condition(this.phase1Condition);
+        paxos.setPhase2Condition(this.phase2Condition);
+        paxos.setServerThread(this.serverThread);
+        paxos.setLock(lock);
+
         Thread paxosThread = new Thread(paxos);
         paxosThread.start();
-        try
-        {
-            paxosThread.join();
-        } catch (InterruptedException e)
-        {
-            logger.error("Unable to wait for paxos thread to finish",e);
-        }
-        return "Value " + value + " is reserved";
+        return "Value " + value + " is being reserved";
     }
 
 
     public String receivePrepareRequest(String[] tokens)
     {
-        return Acceptor.receivePrepareRequest(tokens);
+        Acceptor acceptor = new Acceptor();
+        acceptor.setServerThread(this.serverThread);
+        return acceptor.receivePrepareRequest(tokens);
     }
 
     public synchronized String receivePromiseRequest(String[] tokens)
     {
-        int id = Integer.parseInt(tokens[1]);
-        if(id > ServerThread.getPaxosId())
-        {
-            ServerThread.setPaxosId(id);
-        }
-        ServerThread.numPromises.getAndIncrement();
-        int numServers = peers.size() + 1;
-        if(ServerThread.numPromises.get() > (numServers/2) + 1)
-        {
-            // We've received enough promises. Can continue to phase 2 of paxos
-            phase1Lock.notifyAll();
-        }
-        return "Moving onto phase 2 of paxos";
+        Acceptor acceptor = new Acceptor();
+        acceptor.setServerThread(this.serverThread);
+        return acceptor.receivePromiseRequest(tokens);
     }
 
 
     public String receiveAcceptRequest(String[] tokens)
     {
-        int id = Integer.parseInt(tokens[1]);
-        if(id > ServerThread.getPaxosId())
-        {
-            return Command.ACCEPT.getCommand();
-        }
-        return Command.REJECT_ACCEPT.getCommand();
+        Acceptor acceptor = new Acceptor();
+        acceptor.setServerThread(this.serverThread);
+        return acceptor.receiveAcceptRequest(tokens);
     }
 
     public synchronized String receiveAcceptResponse(String[] tokens)
     {
-        ServerThread.numAccepts.getAndIncrement();
-        int numServers = peers.size() + 1;
-        if(ServerThread.numAccepts.get() > (numServers/2) + 1)
-        {
-            // We've received enough accepts. can agree on a value
-            phase2Lock.notifyAll();
-        }
-        return "Agreed to value";
+        Acceptor acceptor = new Acceptor();
+        acceptor.setServerThread(this.serverThread);
+        acceptor.setLock(lock);
+        acceptor.setPhase2Condition(phase2Condition);
+        return acceptor.receiveAcceptResponse(tokens,peers.size()+1);
     }
 
 
