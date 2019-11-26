@@ -51,9 +51,15 @@ public class MessageThread implements Runnable
         paxos.setPhase2Condition(this.phase2Condition);
         paxos.setServerThread(this.serverThread);
         paxos.setLock(lock);
+        Runnable paxosRunnable = () ->
+        {
+            logger.debug("Starting paxos algorithm");
+            paxos.reserveValue();
+        };
 
-        Thread paxosThread = new Thread(paxos);
+        Thread paxosThread = new Thread(paxosRunnable);
         paxosThread.start();
+
         return "Value " + value + " is being reserved";
     }
 

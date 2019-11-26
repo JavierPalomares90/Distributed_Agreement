@@ -147,10 +147,23 @@ public class ServerThread implements Runnable
                 }
             }
 
-        }catch (IOException e)
+        }catch (Exception e)
         {
             logger.error("Unable to listen for clients",e);
+        }finally
+        {
+            if(tcpServerSocket != null)
+            {
+                try
+                {
+                    tcpServerSocket.close();
+                }catch (Exception e)
+                {
+                    logger.error("Unable to close server socket");
+                }
+            }
         }
+
         logger.debug("Stopping server thread");
 
     }

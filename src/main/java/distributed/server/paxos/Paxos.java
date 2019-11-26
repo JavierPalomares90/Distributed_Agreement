@@ -14,7 +14,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
 @Data
-public class Paxos implements Runnable
+public class Paxos
 {
     private static Logger logger = Logger.getLogger(Paxos.class);
 
@@ -33,6 +33,12 @@ public class Paxos implements Runnable
     @Setter(AccessLevel.PUBLIC)
     Lock lock;
 
+    public String reserveValue()
+    {
+        reserveValue(this.value,this.servers);
+        return "Value is reserved " + this.value;
+    }
+
     // Start the paxos algorithm to reserve the value
     public String reserveValue(String value, List<Server> servers)
     {
@@ -50,14 +56,16 @@ public class Paxos implements Runnable
         proposer.setId(id);
         proposer.setValue(value);
         proposer.setServerThread(this.serverThread);
+
         proposer.propose(servers);
+
         // Wait till we get enough promises to move onto phase 2
         try
         {
             lock.lock();
             while(serverThread.getNumPromises().get() < (numServers / 2 ) + 1)
             {
-
+                logger.debug("Waiting for enough promises before moving onto phase 2");
                 phase1Condition.await();
             }
 
@@ -73,13 +81,13 @@ public class Paxos implements Runnable
         logger.debug("Starting phase 2");
         // Phase 2 of Paxos: Accept the value
         proposer.accept(servers);
-        // Wait till we get enough accepts to agree on a value
         logger.debug("Waiting for value agreement");
         try
         {
             lock.lock();
             while(serverThread.getNumAccepts().get() < (numServers / 2 ) + 1)
             {
+                logger.debug("Waiting for enough accepts before agreeing to value");
 
                 phase2Condition.await();
             }
@@ -97,9 +105,4 @@ public class Paxos implements Runnable
         return Command.AGREE.getCommand() + " " + value;
     }
 
-    public void run()
-    {
-        reserveValue(this.value,this.servers);
-
-    }
 }

@@ -90,7 +90,6 @@ public class Client
             }
             // Print the response
             System.out.println(response);
-            logger.debug("Response from server: " + response);
         }
         if (socket != null)
         {
@@ -116,9 +115,9 @@ public class Client
 
         List<Server> servers = Utils.getHosts(args[0]);
         Scanner sc = new Scanner(System.in);
-        System.out.println("Usage: RESERVE <valueToReserve>");
         while (sc.hasNextLine())
         {
+            System.out.println("Usage: RESERVE <valueToReserve>");
             String cmd = sc.nextLine();
             String tokens[] = cmd.split("\\s+");
             if (Command.RESERVE.getCommand().equals(tokens[0]))
