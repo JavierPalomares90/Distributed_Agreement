@@ -1,4 +1,4 @@
-package distributed.server.responses;
+package distributed.server.paxos.responses;
 
 import distributed.utils.Command;
 
@@ -12,7 +12,7 @@ public class AcceptResponse extends Response
     @Override
     public String toString()
     {
-        return Command.ACCEPT + " " + this.getId() + " " + this.getValue();
+        return Command.ACCEPT + " " + this.getId() + " " + this.getValue() + "\n";
     }
 
 }

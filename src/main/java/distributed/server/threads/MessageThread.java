@@ -1,7 +1,8 @@
 package distributed.server.threads;
 
+import distributed.server.paxos.Paxos;
+import distributed.server.paxos.accept.Acceptor;
 import distributed.server.pojos.Server;
-import distributed.server.propose.Proposer;
 import distributed.utils.Command;
 import lombok.AccessLevel;
 import lombok.Setter;
@@ -13,75 +14,85 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.List;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
 
 public class MessageThread implements Runnable
 {
     private static Logger logger = Logger.getLogger(MessageThread.class);
 
     @Setter(AccessLevel.PUBLIC)
-    Socket socket;
+    private Socket socket;
 
     @Setter(AccessLevel.PUBLIC)
-    List<Server> peers;
+    private ServerThread serverThread;
+
+    @Setter(AccessLevel.PUBLIC)
+    private List<Server> peers;
+
+    @Setter(AccessLevel.PUBLIC)
+    private Condition phase1Condition;
+
+    @Setter(AccessLevel.PUBLIC)
+    private Condition phase2Condition;
+
+    @Setter(AccessLevel.PUBLIC)
+    private Lock lock;
 
 
    // Start the paxos algorithm to reserve the value
-    private String paxos(String value)
+    private String reserveValue(String value)
     {
-        logger.debug("Reserving value " + value);
+        logger.debug("Reserving value using paxos: " + value);
+        Paxos paxos = new Paxos();
+        paxos.setValue(value);
+        paxos.setServers(this.peers);
+        paxos.setPhase1Condition(this.phase1Condition);
+        paxos.setPhase2Condition(this.phase2Condition);
+        paxos.setServerThread(this.serverThread);
+        paxos.setLock(lock);
+        Runnable paxosRunnable = () ->
+        {
+            logger.debug("Starting paxos algorithm");
+            paxos.reserveValue();
+        };
 
-        // Phase 1 of Paxos: Propose the value
-        Proposer proposer = new Proposer(value);
-        boolean proposalAccepted = proposer.propose(peers);
-        if(proposalAccepted == false)
-        {
-            return Command.REJECT_PREPARE.getCommand();
-        }
-        // Phase 2 of Paxos: Accept the value
-        boolean accepted = proposer.accept(peers);
-        if(accepted == false)
-        {
-            return Command.REJECT_ACCEPT.getCommand();
-        }
-        // The value is agreed to
-        return Command.AGREE.getCommand() + " " + value;
+        Thread paxosThread = new Thread(paxosRunnable);
+        paxosThread.start();
+
+        return "Value " + value + " is being reserved";
     }
 
-
-    private String processRequest(String accept, String reject, String[] tokens)
-    {
-        if (tokens.length < 3)
-        {
-            return reject + " " + ServerThread.getPaxosId() + " " + ServerThread.getPaxosValue();
-        }
-        int id = Integer.parseInt(tokens[1]);
-        String value = tokens[2];
-        // Compare the id to our current id
-        if(ServerThread.getPaxosId() > id)
-        {
-            // REJECT the request and send the paxos id and value
-            return reject + " " + ServerThread.getPaxosId() + " " + ServerThread.getPaxosValue();
-        }
-        // Update the new paxosId and accept the request
-        ServerThread.setPaxosId(id);
-        ServerThread.setPaxosValue(value);
-
-        return accept + " " + ServerThread.getPaxosId() + " " + ServerThread.getPaxosValue();
-
-    }
 
     public String receivePrepareRequest(String[] tokens)
     {
-        return processRequest(Command.PROMISE.getCommand(),Command.REJECT_PREPARE.getCommand(),tokens);
+        Acceptor acceptor = new Acceptor();
+        acceptor.setServerThread(this.serverThread);
+        return acceptor.receivePrepareRequest(tokens);
+    }
+
+    public synchronized String receivePromiseRequest(String[] tokens)
+    {
+        Acceptor acceptor = new Acceptor();
+        acceptor.setServerThread(this.serverThread);
+        return acceptor.receivePromiseRequest(tokens);
     }
 
 
     public String receiveAcceptRequest(String[] tokens)
     {
-        /**
-         * TODO: Complete impl
-         */
-        return null;
+        Acceptor acceptor = new Acceptor();
+        acceptor.setServerThread(this.serverThread);
+        return acceptor.receiveAcceptRequest(tokens);
+    }
+
+    public synchronized String receiveAcceptResponse(String[] tokens)
+    {
+        Acceptor acceptor = new Acceptor();
+        acceptor.setServerThread(this.serverThread);
+        acceptor.setLock(lock);
+        acceptor.setPhase2Condition(phase2Condition);
+        return acceptor.receiveAcceptResponse(tokens,peers.size()+1);
     }
 
 
@@ -90,29 +101,41 @@ public class MessageThread implements Runnable
         String[] tokens = msg.split("\\s+");
         if(Command.RESERVE.getCommand().equals(tokens[0]))
         {
-            // The client wants us to agree on a value
+            // The client wants us to agree on a value. Start the paxos value
             if(tokens.length > 1)
             {
                 String value = tokens[1];
-                return paxos(value);
+                return reserveValue(value);
 
             }
         }else if(Command.PREPARE_REQUEST.getCommand().equals(tokens[0]))
         {
            // A peer sent a prepare request with a value
-
-            if(tokens.length>2)
+            if(tokens.length > 2)
             {
-               return receivePrepareRequest(tokens) ;
+               return receivePrepareRequest(tokens);
             }
-
+        }
+        else if (Command.PROMISE.getCommand().equals(tokens[0]))
+        {
+            // A peer promised to accept our prepare request
+            if(tokens.length > 2)
+            {
+                return receivePromiseRequest(tokens);
+            }
         }
         else if(Command.ACCEPT_REQUEST.getCommand().equals(tokens[0]))
         {
+            // A peer sent an accept request with a value
             if(tokens.length>2)
             {
                 return receiveAcceptRequest(tokens) ;
             }
+        }
+        else if(Command.ACCEPT.getCommand().equals(tokens[0]))
+        {
+            // A peer sent a response to our accept request
+            receiveAcceptResponse(tokens);
 
         }
         return "Unable to process msg " + msg;
@@ -129,7 +152,7 @@ public class MessageThread implements Runnable
             if (inputLine != null && inputLine.length() > 0)
             {
                 String msg = inputLine;
-                logger.debug("Processing message from client: " + msg);
+                logger.debug("Processing message: " + msg);
                 String response = processMessage(msg);
                 // Increment the logical clock on response
                 if(response != null)

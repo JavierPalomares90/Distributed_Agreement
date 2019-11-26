@@ -1,5 +1,7 @@
-package distributed.server.learn;
+package distributed.server.paxos.learn;
 
+import distributed.server.paxos.requests.Request;
+import distributed.server.pojos.Server;
 import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
@@ -9,11 +11,9 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
-static 
-
 public class Learner
 {
-    private static Logger logger = Logger.getLogger(ServerThread.class);
+    private static Logger logger = Logger.getLogger(Learner.class);
     
     private String value;
 

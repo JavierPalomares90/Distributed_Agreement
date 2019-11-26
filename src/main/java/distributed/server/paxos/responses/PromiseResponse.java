@@ -1,4 +1,4 @@
-package distributed.server.responses;
+package distributed.server.paxos.responses;
 
 import distributed.utils.Command;
 
@@ -12,6 +12,6 @@ public class PromiseResponse extends Response
     @Override
     public String toString()
     {
-        return Command.PROMISE + " " + this.getId() + " " + this.getValue();
+        return Command.PROMISE + " " + this.getId() + " " + this.getValue() + "\n";
     }
 }
