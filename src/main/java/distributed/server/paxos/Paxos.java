@@ -14,7 +14,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
 @Data
-public class Paxos
+public class Paxos implements Runnable
 {
     private static Logger logger = Logger.getLogger(Paxos.class);
 
@@ -62,7 +62,7 @@ public class Paxos
         try
         {
             lock.lock();
-            while(serverThread.getNumPromises().get() < (numServers / 2  + 1))
+            while(this.serverThread.getNumPromises().get() < (numServers / 2  + 1))
             {
                 logger.debug("Waiting for enough promises before moving onto phase 2");
                 phase1Condition.await();
@@ -76,6 +76,11 @@ public class Paxos
             lock.unlock();
         }
 
+        if(this.serverThread.getNumPromisesRejected().get() < (numServers / 2  + 1))
+        {
+            return "Proposal failed";
+        }
+
         logger.debug("Starting phase 2");
         // Phase 2 of Paxos: Accept the value
         proposer.accept(servers);
@@ -83,7 +88,7 @@ public class Paxos
         try
         {
             lock.lock();
-            while(serverThread.getNumAccepts().get() < (numServers / 2  + 1))
+            while(this.serverThread.getNumAccepts().get() < (numServers / 2  + 1))
             {
                 logger.debug("Waiting for enough accepts before agreeing to value");
 
@@ -98,9 +103,18 @@ public class Paxos
             lock.unlock();
 
         }
+        if(this.serverThread.getNumAcceptsRejected().get() < (numServers / 2  + 1))
+        {
+            return "Proposal failed";
+        }
         logger.debug("Agreed to value");
         // The value is agreed to
         return Command.AGREE.getCommand() + " " + value;
     }
 
+    @Override
+    public void run()
+    {
+        proposeValue();
+    }
 }

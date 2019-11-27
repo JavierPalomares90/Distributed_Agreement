@@ -44,6 +44,7 @@ public class MessageThread implements Runnable
     private String proposeValue(String value)
     {
         logger.debug("Proposing value using paxos: " + value);
+
         Paxos paxos = new Paxos();
         paxos.setValue(value);
         paxos.setServers(this.peers);
@@ -51,13 +52,17 @@ public class MessageThread implements Runnable
         paxos.setPhase2Condition(this.phase2Condition);
         paxos.setServerThread(this.serverThread);
         paxos.setLock(lock);
-        Runnable paxosRunnable = () ->
-        {
-            logger.debug("Starting paxos algorithm");
-            paxos.proposeValue();
-        };
 
-        Thread paxosThread = new Thread(paxosRunnable);
+        Thread paxosThread = new Thread(paxos);
+        // Before starting, check if there is already a paxos proposal running
+        // If so, stop it and reset for the new proposal
+
+        if(this.serverThread.getPaxosThread() != null)
+        {
+            this.serverThread.getPaxosThread().interrupt();
+            this.serverThread.init();
+        }
+        this.serverThread.setPaxosThread(paxosThread);
         paxosThread.start();
 
         return "Value " + value + " is being proposed";

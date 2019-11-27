@@ -115,6 +115,7 @@ public class Client
 
         List<Server> servers = Utils.getHosts(args[0]);
         Scanner sc = new Scanner(System.in);
+        System.out.println("Usage: " + Command.PROPOSE.getCommand() + " <valueToPropose>");
         while (sc.hasNextLine())
         {
             System.out.println("Usage: " + Command.PROPOSE.getCommand() + " <valueToPropose>");

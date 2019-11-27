@@ -1,5 +1,6 @@
 package distributed.server.threads;
 
+import distributed.server.paxos.Paxos;
 import distributed.server.pojos.Server;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -44,16 +45,27 @@ public class ServerThread implements Runnable
     @Getter @Setter(AccessLevel.PUBLIC)
     private String paxosValue;
 
+    @Getter @Setter(AccessLevel.PUBLIC)
+    private Thread paxosThread;
+
     private final Lock threadLock;
     // Conditionals to wait for promises and accepts from a majority
     private final Condition waitForPromises;
     private final Condition waitForAccepts;
 
+    public void init()
+    {
+        numPromises = new AtomicInteger(0);
+        numAccepts = new AtomicInteger(0);
+        numAcceptsRejected = new AtomicInteger(0);
+        numPromisesRejected = new AtomicInteger(0);
+    }
+
+
     public ServerThread()
     {
         paxosId = new AtomicInteger(0);
         threadLock = new ReentrantLock();
-
         waitForPromises = threadLock.newCondition();
         waitForAccepts = threadLock.newCondition();
     }
@@ -64,7 +76,15 @@ public class ServerThread implements Runnable
         int numServers = this.peers.size() + 1;
         if(numPromisesRejected > (numServers/2) + 1)
         {
-            // majority of peers have rejected, stop the proposal
+            logger.debug("Majority of servers rejected the prepare");
+            // majority of peers have rejected, stop waiting for phase2
+            threadLock.lock();
+            synchronized (waitForPromises)
+            {
+                waitForPromises.notifyAll();
+
+            }
+            threadLock.unlock();
         }
 
     }
@@ -75,7 +95,14 @@ public class ServerThread implements Runnable
         int numServers = this.peers.size() + 1;
         if(numAcceptsRejected > (numServers/2) + 1)
         {
-            // majority of peers have rejected, stop the proposal
+            logger.debug("Majority of servers rejected the accept");
+            // majority of peers have rejected, stop waiting for agreement
+            threadLock.lock();
+            synchronized (waitForAccepts)
+            {
+                waitForAccepts.notifyAll();
+            }
+            threadLock.unlock();
 
         }
 
@@ -143,10 +170,7 @@ public class ServerThread implements Runnable
         this.isRunning.getAndSet(true);
         logger.debug("Starting server thread with ip: " + this.ipAddress + " port: " + this.port);
         ServerSocket tcpServerSocket = null;
-        numPromises = new AtomicInteger(0);
-        numAccepts = new AtomicInteger(0);
-        numAcceptsRejected = new AtomicInteger(0);
-        numPromisesRejected = new AtomicInteger(0);
+        init();
         try
         {
             tcpServerSocket = new ServerSocket(this.port);
