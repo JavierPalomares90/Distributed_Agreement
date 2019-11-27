@@ -33,20 +33,19 @@ public class Paxos
     @Setter(AccessLevel.PUBLIC)
     Lock lock;
 
-    public String reserveValue()
+    public String proposeValue()
     {
-        reserveValue(this.value,this.servers);
-        return "Value is reserved " + this.value;
+        return proposeValue(this.value,this.servers);
     }
 
     // Start the paxos algorithm to reserve the value
-    public String reserveValue(String value, List<Server> servers)
+    public String proposeValue(String value, List<Server> servers)
     {
         // Incremeent the paxos id
         int id =  this.serverThread.getPaxosId().incrementAndGet();
 
         // Increment the paxos Id
-        logger.debug("Reserving value " + value + " with id " + id);
+        logger.debug("Proposing value " + value + " with id " + id);
 
         // Servers list doesn't include "this" server
         int numServers = servers.size() + 1;
@@ -63,7 +62,7 @@ public class Paxos
         try
         {
             lock.lock();
-            while(serverThread.getNumPromises().get() < (numServers / 2 ) + 1)
+            while(serverThread.getNumPromises().get() < (numServers / 2  + 1))
             {
                 logger.debug("Waiting for enough promises before moving onto phase 2");
                 phase1Condition.await();
@@ -71,11 +70,10 @@ public class Paxos
 
         } catch (InterruptedException e)
         {
-            logger.error("Unale to await for promises",e);
+            logger.error("Unable to await for promises",e);
         }finally
         {
             lock.unlock();
-
         }
 
         logger.debug("Starting phase 2");
@@ -85,7 +83,7 @@ public class Paxos
         try
         {
             lock.lock();
-            while(serverThread.getNumAccepts().get() < (numServers / 2 ) + 1)
+            while(serverThread.getNumAccepts().get() < (numServers / 2  + 1))
             {
                 logger.debug("Waiting for enough accepts before agreeing to value");
 
@@ -94,7 +92,7 @@ public class Paxos
 
         } catch (InterruptedException e)
         {
-            logger.error("Unale to await for accepts",e);
+            logger.error("Unable to await for accepts",e);
         }finally
         {
             lock.unlock();

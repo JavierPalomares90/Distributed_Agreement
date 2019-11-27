@@ -40,10 +40,10 @@ public class MessageThread implements Runnable
     private Lock lock;
 
 
-   // Start the paxos algorithm to reserve the value
-    private String reserveValue(String value)
+   // Start the paxos algorithm to propose the value
+    private String proposeValue(String value)
     {
-        logger.debug("Reserving value using paxos: " + value);
+        logger.debug("Proposing value using paxos: " + value);
         Paxos paxos = new Paxos();
         paxos.setValue(value);
         paxos.setServers(this.peers);
@@ -54,13 +54,13 @@ public class MessageThread implements Runnable
         Runnable paxosRunnable = () ->
         {
             logger.debug("Starting paxos algorithm");
-            paxos.reserveValue();
+            paxos.proposeValue();
         };
 
         Thread paxosThread = new Thread(paxosRunnable);
         paxosThread.start();
 
-        return "Value " + value + " is being reserved";
+        return "Value " + value + " is being proposed";
     }
 
 
@@ -99,13 +99,13 @@ public class MessageThread implements Runnable
     private String processMessage(String msg)
     {
         String[] tokens = msg.split("\\s+");
-        if(Command.RESERVE.getCommand().equals(tokens[0]))
+        if(Command.PROPOSE.getCommand().equals(tokens[0]))
         {
             // The client wants us to agree on a value. Start the paxos value
             if(tokens.length > 1)
             {
                 String value = tokens[1];
-                return reserveValue(value);
+                return proposeValue(value);
 
             }
         }else if(Command.PREPARE_REQUEST.getCommand().equals(tokens[0]))

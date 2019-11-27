@@ -2,7 +2,7 @@ package distributed.utils;
 
 public enum Command
 {
-    RESERVE("RESERVE"),
+    PROPOSE("PROPOSE"),
     PREPARE_REQUEST("PREPARE_REQUEST"),
     ACCEPT_REQUEST("ACCEPT_REQUEST"),
     LEARN_REQUEST("LEARN_REQUEST"),

@@ -90,11 +90,31 @@ public class Proposer
         {
             if (Command.PROMISE.getCommand().equals(tokens[0]))
             {
+                // the prepare request was accepted
                 this.serverThread.incrementNumPromises();
 
             }else if (Command.ACCEPT.getCommand().equals(tokens[0]))
             {
+                // the accept reqeust was accepted
                 this.serverThread.incrementNumAccepts();
+            }else if(Command.REJECT_PREPARE.getCommand().equals(tokens[0]))
+            {
+                // the prepare request was rejected
+                // Update the id
+                if (tokens.length > 2)
+                {
+                    int id = Integer.parseInt(tokens[1]);
+                    if (id > this.serverThread.getPaxosId().get())
+                    {
+                        this.serverThread.getPaxosId().set(id);
+                    }
+                }
+                this.serverThread.incrementNumPromisesRejected();
+
+            }else if(Command.REJECT_ACCEPT.getCommand().equals(tokens[0]))
+            {
+                // The accept request was rejected
+                this.serverThread.incrementNumAcceptsRejected();
             }
         }
     }

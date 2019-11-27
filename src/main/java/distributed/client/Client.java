@@ -117,10 +117,10 @@ public class Client
         Scanner sc = new Scanner(System.in);
         while (sc.hasNextLine())
         {
-            System.out.println("Usage: RESERVE <valueToReserve>");
+            System.out.println("Usage: " + Command.PROPOSE.getCommand() + " <valueToPropose>");
             String cmd = sc.nextLine();
             String tokens[] = cmd.split("\\s+");
-            if (Command.RESERVE.getCommand().equals(tokens[0]))
+            if (Command.PROPOSE.getCommand().equals(tokens[0]))
             {
                 sendCmd(servers, cmd);
             } else

@@ -32,6 +32,10 @@ public class ServerThread implements Runnable
     private AtomicInteger numPromises;
     @Getter @Setter(AccessLevel.PRIVATE)
     private AtomicInteger numAccepts;
+    @Getter @Setter(AccessLevel.PRIVATE)
+    private AtomicInteger numPromisesRejected;
+    @Getter @Setter(AccessLevel.PRIVATE)
+    private AtomicInteger numAcceptsRejected;
 
     // The Paxos Id
     @Getter @Setter(AccessLevel.PUBLIC)
@@ -52,6 +56,29 @@ public class ServerThread implements Runnable
 
         waitForPromises = threadLock.newCondition();
         waitForAccepts = threadLock.newCondition();
+    }
+
+    public void incrementNumPromisesRejected()
+    {
+        int numPromisesRejected = this.numPromisesRejected.incrementAndGet();
+        int numServers = this.peers.size() + 1;
+        if(numPromisesRejected > (numServers/2) + 1)
+        {
+            // majority of peers have rejected, stop the proposal
+        }
+
+    }
+
+    public void incrementNumAcceptsRejected()
+    {
+        int numAcceptsRejected = this.numAcceptsRejected.incrementAndGet();
+        int numServers = this.peers.size() + 1;
+        if(numAcceptsRejected > (numServers/2) + 1)
+        {
+            // majority of peers have rejected, stop the proposal
+
+        }
+
     }
 
     public void incrementNumPromises()
@@ -118,6 +145,8 @@ public class ServerThread implements Runnable
         ServerSocket tcpServerSocket = null;
         numPromises = new AtomicInteger(0);
         numAccepts = new AtomicInteger(0);
+        numAcceptsRejected = new AtomicInteger(0);
+        numPromisesRejected = new AtomicInteger(0);
         try
         {
             tcpServerSocket = new ServerSocket(this.port);
