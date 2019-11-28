@@ -4,9 +4,6 @@ import distributed.server.pojos.Server;
 import distributed.server.paxos.requests.AcceptRequest;
 import distributed.server.paxos.requests.PrepareRequest;
 import distributed.server.paxos.requests.Request;
-import distributed.server.paxos.responses.AcceptResponse;
-import distributed.server.paxos.responses.PromiseResponse;
-import distributed.server.paxos.responses.Response;
 import distributed.server.threads.ServerThread;
 import distributed.utils.Command;
 import lombok.Data;
@@ -18,7 +15,6 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.List;
 
 
@@ -36,7 +32,7 @@ public class Proposer
     /**
      * Send a request to the peer. Don't wait for the response
      */
-    private void sendRequestToPeer(Request request, Server peer)
+    private void sendRequestToAcceptor(Request request, Server peer)
     {
         logger.debug("Sending request " + request.toString() + " to peer" + peer);
         String command = request.toString();
@@ -78,58 +74,70 @@ public class Proposer
                 }
             }
         }
-        parseResponse(response);
+        parseResponseFromAcceptor(response);
 
     }
 
+    private void updateId(String[] tokens)
+    {
+        // Received a promise from an acceptor
+        // Update the id if needed
+        if (tokens.length > 2)
+        {
+            int id = Integer.parseInt(tokens[1]);
+            if (id > this.serverThread.getPaxosId().get())
+            {
+                this.serverThread.getPaxosId().set(id);
+            }
+        }
+    }
 
-    private void parseResponse(String response)
+    /**
+     * Parse the responses from the acceptors
+     * @param response
+     */
+    private void parseResponseFromAcceptor(String response)
     {
         String[] tokens = response.split("\\s+");
         if(tokens.length > 1)
         {
             if (Command.PROMISE.getCommand().equals(tokens[0]))
             {
-                // the prepare request was accepted
+                updateId(tokens);
                 this.serverThread.incrementNumPromises();
 
             }else if (Command.ACCEPT.getCommand().equals(tokens[0]))
             {
-                // the accept reqeust was accepted
+                // Receive an accept from an acceptor
+                updateId(tokens);
                 this.serverThread.incrementNumAccepts();
             }else if(Command.REJECT_PREPARE.getCommand().equals(tokens[0]))
             {
                 // the prepare request was rejected
                 // Update the id
-                if (tokens.length > 2)
-                {
-                    int id = Integer.parseInt(tokens[1]);
-                    if (id > this.serverThread.getPaxosId().get())
-                    {
-                        this.serverThread.getPaxosId().set(id);
-                    }
-                }
+                updateId(tokens);
                 this.serverThread.incrementNumPromisesRejected();
 
             }else if(Command.REJECT_ACCEPT.getCommand().equals(tokens[0]))
             {
                 // The accept request was rejected
+                updateId(tokens);
                 this.serverThread.incrementNumAcceptsRejected();
             }
         }
     }
 
     /**
-     * Send the request to the peers
+     * Send the request to the acceptors
      *
-     * @param peers
+     * @param acceptors
      * @return
      */
-    private void sendRequest(Request request, List<Server> peers)
+    private void sendRequest(Request request, List<Server> acceptors)
     {
-        for (Server peer : peers)
+        for (Server acceptor : acceptors)
         {
-            sendRequestToPeer(request, peer);
+            sendRequestToAcceptor(request, acceptor);
         }
     }
 
