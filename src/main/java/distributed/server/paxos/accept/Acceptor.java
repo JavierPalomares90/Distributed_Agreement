@@ -81,8 +81,16 @@ public class Acceptor
             this.serverThread.getPaxosId().set(id);
             this.serverThread.setPaxosValue(value);
 
+            // Respond with the previously promised value. If it's null, then send the value from this prepare
+            this.serverThread.getPaxosId().set(id);
+            String valuePreviouslyPromised = this.serverThread.getPaxosValue();
+            if(valuePreviouslyPromised == null)
+            {
+                valuePreviouslyPromised = value;
+            }
+
             logger.debug("Promising to request with id " + id + " value " + value);
-            return Command.PROMISE.getCommand() + " " + this.serverThread.getPaxosId().get() + " " + this.serverThread.getPaxosValue() + "\n";
+            return Command.PROMISE.getCommand() + " " + this.serverThread.getPaxosId().get() + " " + valuePreviouslyPromised + "\n";
         }
         logger.debug("Rejecting prepare request with id " + id + " value " + value);
         // REJECT the request and send the paxos id and value

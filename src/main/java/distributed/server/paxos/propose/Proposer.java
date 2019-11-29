@@ -82,6 +82,34 @@ public class Proposer
 
     }
 
+    private void updateId(String[] tokens)
+    {
+        // Update the id
+        if (tokens.length > 2)
+        {
+            int id = Integer.parseInt(tokens[1]);
+            if (id > this.serverThread.getPaxosId().get())
+            {
+                this.serverThread.getPaxosId().set(id);
+            }
+        }
+    }
+
+    private void updateIdAndValue(String[] tokens)
+    {
+        // Update the id
+        if (tokens.length > 3)
+        {
+            int id = Integer.parseInt(tokens[1]);
+            String value = tokens[2];
+            if (id > this.serverThread.getPaxosId().get())
+            {
+                this.serverThread.getPaxosId().set(id);
+                this.serverThread.setPaxosValue(value);
+            }
+        }
+
+    }
 
     private void parseResponse(String response)
     {
@@ -90,30 +118,27 @@ public class Proposer
         {
             if (Command.PROMISE.getCommand().equals(tokens[0]))
             {
+
+                // Update the id
+                updateIdAndValue(tokens);
                 // the prepare request was accepted
                 this.serverThread.incrementNumPromises();
 
             }else if (Command.ACCEPT.getCommand().equals(tokens[0]))
             {
                 // the accept reqeust was accepted
+                updateId(tokens);
                 this.serverThread.incrementNumAccepts();
             }else if(Command.REJECT_PREPARE.getCommand().equals(tokens[0]))
             {
                 // the prepare request was rejected
-                // Update the id
-                if (tokens.length > 2)
-                {
-                    int id = Integer.parseInt(tokens[1]);
-                    if (id > this.serverThread.getPaxosId().get())
-                    {
-                        this.serverThread.getPaxosId().set(id);
-                    }
-                }
+                updateIdAndValue(tokens);
                 this.serverThread.incrementNumPromisesRejected();
 
             }else if(Command.REJECT_ACCEPT.getCommand().equals(tokens[0]))
             {
                 // The accept request was rejected
+                updateId(tokens);
                 this.serverThread.incrementNumAcceptsRejected();
             }
         }
