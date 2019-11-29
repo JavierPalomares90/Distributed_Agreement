@@ -4,9 +4,6 @@ import distributed.server.pojos.Server;
 import distributed.server.paxos.requests.AcceptRequest;
 import distributed.server.paxos.requests.PrepareRequest;
 import distributed.server.paxos.requests.Request;
-import distributed.server.paxos.responses.AcceptResponse;
-import distributed.server.paxos.responses.PromiseResponse;
-import distributed.server.paxos.responses.Response;
 import distributed.server.threads.ServerThread;
 import distributed.utils.Command;
 import lombok.Data;
@@ -18,7 +15,6 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.List;
 
 
@@ -36,9 +32,9 @@ public class Proposer
     /**
      * Send a request to the peer. Don't wait for the response
      */
-    private void sendRequestToPeer(Request request, Server peer)
+    private void sendRequestToAcceptor(Request request, Server acceptor)
     {
-        logger.debug("Sending request " + request.toString() + " to peer" + peer);
+        logger.debug("Sending request " + request.toString() + " to acceptor" + acceptor);
         String command = request.toString();
         // Send the command over TCP
         Socket tcpSocket = null;
@@ -46,7 +42,7 @@ public class Proposer
         try
         {
             // Get the socket
-            tcpSocket = new Socket(peer.getIpAddress(), peer.getPort());
+            tcpSocket = new Socket(acceptor.getIpAddress(), acceptor.getPort());
             PrintWriter outputWriter = new PrintWriter(tcpSocket.getOutputStream(), true);
             BufferedReader inputReader = new BufferedReader(new InputStreamReader(tcpSocket.getInputStream()));
             // Write the message
@@ -64,7 +60,7 @@ public class Proposer
 
         } catch (Exception e)
         {
-            logger.error("Unable to send msg to " + peer.toString(),e);
+            logger.error("Unable to send msg to " + acceptor.toString(),e);
         } finally
         {
             if (tcpSocket != null)
@@ -78,7 +74,7 @@ public class Proposer
                 }
             }
         }
-        parseResponse(response);
+        parseResponseFromAcceptor(response);
 
     }
 
@@ -111,8 +107,9 @@ public class Proposer
 
     }
 
-    private void parseResponse(String response)
+    private void parseResponseFromAcceptor(String response)
     {
+        logger.debug("Response from acceptor " + response);
         String[] tokens = response.split("\\s+");
         if(tokens.length > 1)
         {
@@ -145,7 +142,7 @@ public class Proposer
     }
 
     /**
-     * Send the request to the peers
+     * Send the request to the acceptors
      *
      * @param peers
      * @return
@@ -154,28 +151,28 @@ public class Proposer
     {
         for (Server peer : peers)
         {
-            sendRequestToPeer(request, peer);
+            sendRequestToAcceptor(request, peer);
         }
     }
 
-    public boolean accept(List<Server> peers)
+    public boolean accept(List<Server> acceptors)
     {
         AcceptRequest acceptRequest = new AcceptRequest();
         acceptRequest.setId(this.id);
         acceptRequest.setValue(value);
-        // send the accept request to all peers
-        sendAcceptRequest(acceptRequest,peers);
+        // send the accept request to all acceptors
+        sendAcceptRequest(acceptRequest,acceptors);
         return true;
     }
 
     /**
      * Broadcast the accept request to the servers
      * @param acceptRequest
-     * @param peers
+     * @param acceptors
      */
-    private void sendAcceptRequest(AcceptRequest acceptRequest, List<Server> peers)
+    private void sendAcceptRequest(AcceptRequest acceptRequest, List<Server> acceptors)
     {
-        sendRequest(acceptRequest, peers);
+        sendRequest(acceptRequest, acceptors);
         // Increment the number of accepts for ourself
         this.serverThread.incrementNumAccepts();
     }
@@ -183,25 +180,25 @@ public class Proposer
     /**
      * Broadcast the prepare request to the servers
      * @param prepareRequest
-     * @param peers
+     * @param acceptors
      */
-    private void sendPrepareRequest(PrepareRequest prepareRequest, List<Server> peers)
+    private void sendPrepareRequest(PrepareRequest prepareRequest, List<Server> acceptors)
     {
-        sendRequest(prepareRequest, peers);
+        sendRequest(prepareRequest, acceptors);
         // Increment the number of promises for ourself
         this.serverThread.incrementNumPromises();
     }
 
 
-    public boolean propose(List<Server> peers)
+    public boolean propose(List<Server> acceptors)
     {
         logger.debug("Proposing value " + this.value);
         // send the prepare request to all peers
         PrepareRequest prepareRequest = new PrepareRequest();
         prepareRequest.setId(this.id);
         prepareRequest.setValue(this.value);
-        logger.debug("Sending prepare request to peers");
-        sendPrepareRequest(prepareRequest,peers);
+        logger.debug("Sending prepare request to acceptors");
+        sendPrepareRequest(prepareRequest,acceptors);
         return true;
     }
 }
