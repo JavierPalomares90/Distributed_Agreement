@@ -5,4 +5,11 @@ package distributed.server.byzantine.accept;
  */
 public class ByzAcceptor
 {
+
+    public void receiveSafeRequest(String[] tokens)
+    {
+        /**
+         * TODO: Complete impl
+         */
+    }
 }

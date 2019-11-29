@@ -7,8 +7,6 @@ import distributed.server.paxos.requests.Request;
 import distributed.server.threads.ServerThread;
 import distributed.utils.Command;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
@@ -22,17 +20,10 @@ import java.util.List;
 public class Proposer
 {
     private static Logger logger = Logger.getLogger(Proposer.class);
-    @Getter @Setter
-    private int id;
-    @Getter @Setter
-    private String value;
-    @Getter @Setter
-    private ServerThread serverThread;
+    protected ServerThread serverThread;
 
-    /**
-     * Send a request to the peer. Don't wait for the response
-     */
-    private void sendRequestToAcceptor(Request request, Server acceptor)
+
+    private void sendRequestToAcceptor(Request request, Server acceptor, boolean waitForResponse)
     {
         logger.debug("Sending request " + request.toString() + " to acceptor" + acceptor);
         String command = request.toString();
@@ -48,7 +39,7 @@ public class Proposer
             // Write the message
             outputWriter.write(command);
             outputWriter.flush();
-            while(true)
+            while(waitForResponse)
             {
                 String input = inputReader.readLine();
                 if (input == null)
@@ -144,21 +135,29 @@ public class Proposer
     /**
      * Send the request to the acceptors
      *
-     * @param peers
+     * @param acceptors
      * @return
      */
-    private void sendRequest(Request request, List<Server> peers)
+    protected void sendRequest(Request request, List<Server> acceptors, boolean waitForResponse)
     {
-        for (Server peer : peers)
+        for (Server acceptor : acceptors)
         {
-            sendRequestToAcceptor(request, peer);
+            sendRequestToAcceptor(request, acceptor ,waitForResponse);
         }
+
+    }
+
+    protected void sendRequest(Request request, List<Server> acceptors)
+    {
+        sendRequest(request,acceptors,true);
     }
 
     public boolean accept(List<Server> acceptors)
     {
+        int id = this.serverThread.getPaxosId().get();
+        String value =  this.serverThread.getPaxosValue();
         AcceptRequest acceptRequest = new AcceptRequest();
-        acceptRequest.setId(this.id);
+        acceptRequest.setId(id);
         acceptRequest.setValue(value);
         // send the accept request to all acceptors
         sendAcceptRequest(acceptRequest,acceptors);
@@ -190,13 +189,20 @@ public class Proposer
     }
 
 
+    /**
+     * Send the prepare request to the acceptors
+     * @param acceptors
+     * @return
+     */
     public boolean propose(List<Server> acceptors)
     {
-        logger.debug("Proposing value " + this.value);
+        int id = this.serverThread.getPaxosId().get();
+        String value =  this.serverThread.getPaxosValue();
+        logger.debug("Proposing value " + value);
         // send the prepare request to all peers
         PrepareRequest prepareRequest = new PrepareRequest();
-        prepareRequest.setId(this.id);
-        prepareRequest.setValue(this.value);
+        prepareRequest.setId(id);
+        prepareRequest.setValue(value);
         logger.debug("Sending prepare request to acceptors");
         sendPrepareRequest(prepareRequest,acceptors);
         return true;

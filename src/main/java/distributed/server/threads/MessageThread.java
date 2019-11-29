@@ -1,5 +1,6 @@
 package distributed.server.threads;
 
+import distributed.server.byzantine.accept.ByzAcceptor;
 import distributed.server.paxos.Paxos;
 import distributed.server.paxos.accept.Acceptor;
 import distributed.server.pojos.Server;
@@ -80,7 +81,9 @@ public class MessageThread implements Runnable
     {
         Acceptor acceptor = new Acceptor();
         acceptor.setServerThread(this.serverThread);
-        return acceptor.receivePromiseRequest(tokens);
+        acceptor.receivePromiseRequest(tokens);
+        // Return null. Don't need to write anything back
+        return null;
     }
 
 
@@ -98,6 +101,14 @@ public class MessageThread implements Runnable
         acceptor.setLock(lock);
         acceptor.setPhase2Condition(phase2Condition);
         return acceptor.receiveAcceptResponse(tokens,peers.size()+1);
+    }
+
+    private String receiveSafeRequest(String[] tokens)
+    {
+        ByzAcceptor acceptor = new ByzAcceptor();
+        acceptor.receiveSafeRequest(tokens);
+
+        return null;
     }
 
 
@@ -142,6 +153,10 @@ public class MessageThread implements Runnable
             // A peer sent a response to our accept request
             receiveAcceptResponse(tokens);
 
+        }
+        else if(Command.SAFE_REQUEST.getCommand().equals(tokens[0]))
+        {
+            receiveSafeRequest(tokens);
         }
         return "Unable to process msg " + msg;
     }

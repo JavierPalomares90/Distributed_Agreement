@@ -22,16 +22,16 @@ public class Paxos implements Runnable
     private List<Server> servers;
 
     @Setter(AccessLevel.PUBLIC)
-    Condition phase1Condition;
+    protected Condition phase1Condition;
 
     @Setter(AccessLevel.PUBLIC)
-    Condition phase2Condition;
+    protected Condition phase2Condition;
 
     @Setter(AccessLevel.PUBLIC)
-    ServerThread serverThread;
+    protected ServerThread serverThread;
 
     @Setter(AccessLevel.PUBLIC)
-    Lock lock;
+    protected Lock lock;
 
     public String proposeValue()
     {
@@ -41,7 +41,7 @@ public class Paxos implements Runnable
     // Start the paxos algorithm to reserve the value
     public String proposeValue(String value, List<Server> servers)
     {
-        // Incremeent the paxos id
+        // Increment the paxos id
         int id =  this.serverThread.getPaxosId().incrementAndGet();
 
         // Increment the paxos Id
@@ -52,8 +52,6 @@ public class Paxos implements Runnable
 
         // Phase 1 of Paxos: Propose the value
         Proposer proposer = new Proposer();
-        proposer.setId(id);
-        proposer.setValue(value);
         proposer.setServerThread(this.serverThread);
 
         proposer.propose(servers);

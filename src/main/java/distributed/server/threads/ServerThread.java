@@ -78,16 +78,11 @@ public class ServerThread implements Runnable
         {
             logger.debug("Majority of servers rejected the prepare");
             // majority of peers have rejected, stop waiting for phase2
-            threadLock.lock();
-            synchronized (waitForPromises)
-            {
-                waitForPromises.notifyAll();
-
-            }
-            threadLock.unlock();
+            notifyPromises();
         }
 
     }
+
 
     public void incrementNumAcceptsRejected()
     {
@@ -96,16 +91,33 @@ public class ServerThread implements Runnable
         if(numAcceptsRejected > (numServers/2) + 1)
         {
             logger.debug("Majority of servers rejected the accept");
-            // majority of peers have rejected, stop waiting for agreement
-            threadLock.lock();
-            synchronized (waitForAccepts)
-            {
-                waitForAccepts.notifyAll();
-            }
-            threadLock.unlock();
+            notifyAccepts();
 
         }
 
+    }
+
+    private void notifyAccepts()
+    {
+        // majority of peers have rejected, stop waiting for agreement
+        threadLock.lock();
+        synchronized (waitForAccepts)
+        {
+            waitForAccepts.notifyAll();
+        }
+        threadLock.unlock();
+
+    }
+
+    private void notifyPromises()
+    {
+        threadLock.lock();
+        synchronized (waitForPromises)
+        {
+            waitForPromises.notifyAll();
+
+        }
+        threadLock.unlock();
     }
 
     public void incrementNumPromises()
@@ -114,13 +126,7 @@ public class ServerThread implements Runnable
         int numServers = this.peers.size() + 1;
         if(numPromises >= (numServers/2) + 1)
         {
-            threadLock.lock();
-            synchronized (waitForPromises)
-            {
-                waitForPromises.notifyAll();
-
-            }
-            threadLock.unlock();
+            notifyPromises();
         }
     }
 
@@ -130,12 +136,7 @@ public class ServerThread implements Runnable
         int numServers = this.peers.size() + 1;
         if(numAccepts >= (numServers/2) + 1)
         {
-            threadLock.lock();
-            synchronized (waitForAccepts)
-            {
-                waitForAccepts.notifyAll();
-            }
-            threadLock.unlock();
+            notifyAccepts();
         }
     }
 
