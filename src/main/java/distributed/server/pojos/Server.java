@@ -12,6 +12,7 @@ public class Server
     private String ipAddress;
     private Integer port;
     private Integer serverId;
+    private Double weight;
 
     public Server(String ipAddress)
 	{
