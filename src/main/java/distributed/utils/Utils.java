@@ -17,6 +17,22 @@ public class Utils
 {
     private static Logger logger = Logger.getLogger(Utils.class);
 
+    public static int getAnchorSize(List<Server> servers, double p)
+    {
+        double weight = 0;
+        int anchorSize = 0;
+        for (Server server: servers)
+        {
+            if(weight > p)
+            {
+                break;
+            }
+            weight += server.getWeight();
+            anchorSize++;
+        }
+        return anchorSize;
+    }
+
     // Load the hosts from the yaml file
     public static List<Server> getHosts(String path)
     {
