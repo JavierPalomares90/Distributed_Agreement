@@ -14,16 +14,16 @@ import java.util.concurrent.locks.Lock;
 public class Acceptor
 {
     @Setter(AccessLevel.PUBLIC)
-    private ServerThread serverThread;
+    protected ServerThread serverThread;
 
     @Setter(AccessLevel.PUBLIC)
-    private Condition phase1Condition;
+    protected Condition phase1Condition;
 
     @Setter(AccessLevel.PUBLIC)
-    private Condition phase2Condition;
+    protected Condition phase2Condition;
 
     @Setter(AccessLevel.PUBLIC)
-    private Lock lock;
+    protected Lock lock;
 
     private static Logger logger = Logger.getLogger(Acceptor.class);
 
@@ -65,6 +65,22 @@ public class Acceptor
         return "Agreed to value";
     }
 
+    protected String updateValues(int id, String value)
+    {
+        // Update the new paxosId and accept the request
+        this.serverThread.getPaxosId().set(id);
+        this.serverThread.setPaxosValue(value);
+
+        // Respond with the previously promised value. If it's null, then send the value from this prepare
+        this.serverThread.getPaxosId().set(id);
+        String valuePreviouslyPromised = this.serverThread.getPaxosValue();
+        if(valuePreviouslyPromised == null)
+        {
+            valuePreviouslyPromised = value;
+        }
+        return valuePreviouslyPromised;
+
+    }
     public String receivePrepareRequest(String[] tokens)
     {
         if (tokens.length < 3)
@@ -77,19 +93,9 @@ public class Acceptor
         // Compare the id to our current id
         if(id > this.serverThread.getPaxosId().get())
         {
-            // Update the new paxosId and accept the request
-            this.serverThread.getPaxosId().set(id);
-            this.serverThread.setPaxosValue(value);
+            String valuePreviouslyPromised = updateValues(id,value);
 
-            // Respond with the previously promised value. If it's null, then send the value from this prepare
-            this.serverThread.getPaxosId().set(id);
-            String valuePreviouslyPromised = this.serverThread.getPaxosValue();
-            if(valuePreviouslyPromised == null)
-            {
-                valuePreviouslyPromised = value;
-            }
-
-            logger.debug("Promising to request with id " + id + " value " + value);
+            logger.debug("Promising to request with id " + id + " value " + valuePreviouslyPromised);
             return Command.PROMISE.getCommand() + " " + this.serverThread.getPaxosId().get() + " " + valuePreviouslyPromised + "\n";
         }
         logger.debug("Rejecting prepare request with id " + id + " value " + value);
