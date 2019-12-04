@@ -60,6 +60,8 @@ public class ServerThread implements Runnable
     // The Safe Paxos value
     @Getter @Setter(AccessLevel.PUBLIC)
     private String safePaxosValue;
+    @Getter @Setter(AccessLevel.PUBLIC)
+    private AtomicBoolean valueIsSafe = new AtomicBoolean(false);
 
     @Getter @Setter(AccessLevel.PUBLIC)
     private Thread paxosThread;

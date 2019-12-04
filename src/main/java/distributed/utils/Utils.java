@@ -57,6 +57,11 @@ public class Utils
         return response;
     }
 
+    public static int getQuorumSize(int numServers,int numFaulty)
+    {
+        return numServers/2 + numFaulty + 1;
+    }
+
     public static int getAnchorSize(List<Server> servers, double p)
     {
         double weight = 0;

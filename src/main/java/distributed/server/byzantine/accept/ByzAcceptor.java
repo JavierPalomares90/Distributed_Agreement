@@ -40,7 +40,13 @@ public class ByzAcceptor extends Acceptor
         Runnable broadcastSafeRunnable = () ->
         {
             logger.debug("Broadcasting safe request to other acceptors");
-            broadcastSafeRequest(id,value,this.acceptors);
+            boolean isValueSafe = broadcastSafeRequest(id,value,this.acceptors);
+            // Mark the value as safe or not
+            this.serverThread.getValueIsSafe().set(isValueSafe);
+            /**
+             * TODO: reject if the broadcast did not reach a quorum.
+             * If the request is successful, send the proposer the accept message
+             */
         };
         new Thread(broadcastSafeRunnable).start();
         return null;
@@ -66,7 +72,11 @@ public class ByzAcceptor extends Acceptor
             // Broadcast the prepare request to the other acceptors
             Runnable broadcastPrepareRunnable = () ->
             {
-                broadcastPrepareRequest(id,value,this.acceptors);
+                boolean broadcastSuccessful = broadcastPrepareRequest(id,value,this.acceptors);
+                /**
+                 * TODO: reject if the broadcast did not reach a quorum
+                 */
+
             };
             new Thread(broadcastPrepareRunnable).start();
 
@@ -79,32 +89,54 @@ public class ByzAcceptor extends Acceptor
 
     }
 
-    private void broadcastPrepareRequest(int id, String value, List<Server> acceptors)
+    private boolean broadcastPrepareRequest(int id, String value, List<Server> acceptors)
     {
         // Broadcast the request we received from a proposer to all peers
         String cmd = Command.PREPARE_BROADCAST.getCommand() + " " + id + " " + value;
-        broadcastCommand(cmd,acceptors);
+        return broadcastCommand(cmd,acceptors);
     }
 
-    private void broadcastSafeRequest(int id, String value, List<Server> acceptors)
+    private boolean broadcastSafeRequest(int id, String value, List<Server> acceptors)
     {
         // Broadcast the request we received from a proposer to all peers
         String cmd = Command.SAFE_BROADCAST.getCommand() + " " + id + " " + value;
-        broadcastCommand(cmd,acceptors);
+        return broadcastCommand(cmd,acceptors);
+    }
+
+    private static synchronized boolean broadcastCommand(String cmd, List<Server> acceptors)
+    {
+        return broadcastCommand(cmd,acceptors,0);
+
     }
 
 
-    private void broadcastCommand(String cmd, List<Server> acceptors)
+    private static synchronized boolean broadcastCommand(String cmd, List<Server> acceptors, int numFaulty)
     {
+        int numAccepts = 0;
+        int numRejects = 0;
+        int numServers = acceptors.size();
+        int quorumSize = Utils.getQuorumSize(numServers,numFaulty);
         for(Server acceptor: acceptors)
         {
             String response = Utils.sendTcpMessage(acceptor,cmd, true);
-            /**
-             * TODO: Use the response to figure out if we have a byzantine response
-             */
-
+            if(Command.SAFE_BROADCAST_ACCEPT.getCommand().equals(response) || Command.PREPARE_BROADCAST_ACCEPT.getCommand().equals(response))
+            {
+                numAccepts++;
+            }
+            else
+            {
+                numRejects++;
+            }
+            if(numAccepts >= quorumSize)
+            {
+                return true;
+            }
+            if(numRejects > (numServers - quorumSize))
+            {
+                return false;
+            }
         }
-
+        return false;
     }
 
     public String receiveSafeBroadcast(String[] tokens)
