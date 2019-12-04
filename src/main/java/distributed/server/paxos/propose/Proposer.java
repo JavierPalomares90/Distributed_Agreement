@@ -6,6 +6,7 @@ import distributed.server.paxos.requests.PrepareRequest;
 import distributed.server.paxos.requests.Request;
 import distributed.server.threads.ServerThread;
 import distributed.utils.Command;
+import distributed.utils.Utils;
 import lombok.Data;
 import org.apache.log4j.Logger;
 
@@ -28,43 +29,7 @@ public class Proposer
         logger.debug("Sending request " + request.toString() + " to acceptor" + acceptor);
         String command = request.toString();
         // Send the command over TCP
-        Socket tcpSocket = null;
-        String response = "";
-        try
-        {
-            // Get the socket
-            tcpSocket = new Socket(acceptor.getIpAddress(), acceptor.getPort());
-            PrintWriter outputWriter = new PrintWriter(tcpSocket.getOutputStream(), true);
-            BufferedReader inputReader = new BufferedReader(new InputStreamReader(tcpSocket.getInputStream()));
-            // Write the message
-            outputWriter.write(command);
-            outputWriter.flush();
-            while(waitForResponse)
-            {
-                String input = inputReader.readLine();
-                if (input == null)
-                {
-                    break;
-                }
-                response += input;
-            }
-
-        } catch (Exception e)
-        {
-            logger.error("Unable to send msg to " + acceptor.toString(),e);
-        } finally
-        {
-            if (tcpSocket != null)
-            {
-                try
-                {
-                    tcpSocket.close();
-                } catch (Exception e)
-                {
-                    logger.error("Unable to close socket",e);
-                }
-            }
-        }
+        String response = Utils.sendTcpMessage(acceptor,command, waitForResponse);
         parseResponseFromAcceptor(response);
 
     }

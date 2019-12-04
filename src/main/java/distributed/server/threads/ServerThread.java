@@ -45,6 +45,13 @@ public class ServerThread implements Runnable
     @Getter @Setter(AccessLevel.PUBLIC)
     private String paxosValue;
 
+    // The Safe Paxos Id
+    @Getter @Setter(AccessLevel.PUBLIC)
+    private AtomicInteger safePaxosId;
+    // The Safe Paxos value
+    @Getter @Setter(AccessLevel.PUBLIC)
+    private String safePaxosValue;
+
     @Getter @Setter(AccessLevel.PUBLIC)
     private Thread paxosThread;
 
@@ -147,6 +154,13 @@ public class ServerThread implements Runnable
     {
         threadLock.lock();
         paxosValue = String.copyValueOf(value.toCharArray());
+        threadLock.unlock();
+    }
+
+    public void setSafePaxosValue(String value)
+    {
+        threadLock.lock();
+        safePaxosValue = String.copyValueOf(value.toCharArray());
         threadLock.unlock();
     }
 

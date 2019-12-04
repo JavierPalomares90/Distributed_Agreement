@@ -111,6 +111,24 @@ public class MessageThread implements Runnable
         return null;
     }
 
+    private String receiveSafeBroadcast(String[] tokens)
+    {
+        /**
+         * TODO: Complete impl
+         */
+        return null;
+
+    }
+
+    private String receivePrepareBroadcast(String[] tokens)
+    {
+        /**
+         * TODO: Complete impl
+         */
+        return null;
+
+    }
+
 
     private String processMessage(String msg)
     {
@@ -154,9 +172,19 @@ public class MessageThread implements Runnable
             receiveAcceptResponse(tokens);
 
         }
-        else if(Command.SAFE_REQUEST.getCommand().equals(tokens[0]))
-        {
+        else if(Command.SAFE_REQUEST.getCommand().equals(tokens[0])) {
+            // A proposer sent us a safe request
             receiveSafeRequest(tokens);
+
+        }else if(Command.SAFE_BROADCAST.getCommand().equals(tokens[0]))
+        {
+            // An acceptor is broadcasting the safe request it received
+            receiveSafeBroadcast(tokens);
+        }
+        else if(Command.PREPARE_BROADCAST.getCommand().equals(tokens[0]))
+        {
+            // An acceptor is broadcasting the prepare request it received
+            receivePrepareBroadcast(tokens);
         }
         return "Unable to process msg " + msg;
     }

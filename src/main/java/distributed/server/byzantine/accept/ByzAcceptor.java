@@ -4,6 +4,7 @@ import distributed.server.paxos.accept.Acceptor;
 import distributed.server.paxos.requests.Request;
 import distributed.server.pojos.Server;
 import distributed.utils.Command;
+import distributed.utils.Utils;
 import lombok.AccessLevel;
 import lombok.Setter;
 import org.apache.log4j.Logger;
@@ -20,25 +21,29 @@ public class ByzAcceptor extends Acceptor
 
     private static Logger logger = Logger.getLogger(ByzAcceptor.class);
 
-    public void receiveSafeRequest(String[] tokens)
+    public String receiveSafeRequest(String[] tokens)
     {
         if (tokens.length < 2)
         {
-            return;
+            return null;
         }
         int id = Integer.parseInt(tokens[1]);
         String value = tokens[2];
+        logger.debug("Received safe request with id: " + id + " value: " + value);
+
+        // Set the safe id and value
+        this.serverThread.getSafePaxosId().set(id);
+        this.serverThread.setSafePaxosValue(value);
+        logger.debug("Set safe id and value " + id + " " + value);
 
         // Broadcast the safe to the rest of the acceptors
         Runnable broadcastSafeRunnable = () ->
         {
+            logger.debug("Broadcasting safe request to other acceptors");
             broadcastSafeRequest(id,value,this.acceptors);
         };
         new Thread(broadcastSafeRunnable).start();
-
-        /**
-         * TODO: Complete impl
-         */
+        return null;
     }
 
     @Override
@@ -93,6 +98,10 @@ public class ByzAcceptor extends Acceptor
     {
         for(Server acceptor: acceptors)
         {
+            String response = Utils.sendTcpMessage(acceptor,cmd, true);
+            /**
+             * TODO: Use the response to figure out if we have a byzantine response
+             */
 
         }
 

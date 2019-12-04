@@ -5,10 +5,8 @@ import org.apache.log4j.Logger;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -16,6 +14,48 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Utils
 {
     private static Logger logger = Logger.getLogger(Utils.class);
+
+    public static String sendTcpMessage(Server acceptor,String command, boolean waitForResponse)
+    {
+        Socket tcpSocket = null;
+        String response = "";
+        try
+        {
+            // Get the socket
+            tcpSocket = new Socket(acceptor.getIpAddress(), acceptor.getPort());
+            PrintWriter outputWriter = new PrintWriter(tcpSocket.getOutputStream(), true);
+            BufferedReader inputReader = new BufferedReader(new InputStreamReader(tcpSocket.getInputStream()));
+            // Write the message
+            outputWriter.write(command);
+            outputWriter.flush();
+            while(waitForResponse)
+            {
+                String input = inputReader.readLine();
+                if (input == null)
+                {
+                    break;
+                }
+                response += input;
+            }
+
+        } catch (Exception e)
+        {
+            logger.error("Unable to send msg to " + acceptor.toString(),e);
+        } finally
+        {
+            if (tcpSocket != null)
+            {
+                try
+                {
+                    tcpSocket.close();
+                } catch (Exception e)
+                {
+                    logger.error("Unable to close socket",e);
+                }
+            }
+        }
+        return response;
+    }
 
     public static int getAnchorSize(List<Server> servers, double p)
     {
