@@ -106,4 +106,45 @@ public class ByzAcceptor extends Acceptor
         }
 
     }
+
+    public String receiveSafeBroadcast(String[] tokens)
+    {
+        int id = Integer.parseInt(tokens[1]);
+        String value = tokens[2];
+
+        // Check the id of the broadcast matches what we received
+        if(this.serverThread.getSafePaxosId() == null || (this.serverThread.getSafePaxosId().get() != id))
+        {
+            // The safe request that was broadcast doesn't match what we've received
+            return Command.SAFE_BROADCAST_REJECT.getCommand();
+        }
+        // check the value of the broadcast matches waht we received
+        if(this.serverThread.getSafePaxosValue() == null || (this.serverThread.getSafePaxosValue().equals(value) == false) )
+        {
+            // The safe request that was broadcast doesn't match what we've received
+            return Command.SAFE_BROADCAST_REJECT.getCommand();
+        }
+
+        return Command.SAFE_BROADCAST_ACCEPT.getCommand();
+    }
+
+    public String receivePrepareBroadcast(String[] tokens)
+    {
+        int id = Integer.parseInt(tokens[1]);
+        String value = tokens[2];
+        // Check the id of the broadcast matches what we received
+        if(this.serverThread.getProposedPaxosId() == null || (this.serverThread.getProposedPaxosId().get() != id))
+        {
+            // The safe request that was broadcast doesn't match what we've received
+            return Command.PREPARE_BROADCAST_REJECT.getCommand();
+        }
+        // check the value of the broadcast matches waht we received
+        if(this.serverThread.getProposedPaxosValue() == null || (this.serverThread.getProposedPaxosValue().equals(value) ==  false))
+        {
+            // The safe request that was broadcast doesn't match what we've received
+            return Command.PREPARE_BROADCAST_REJECT.getCommand();
+        }
+
+        return Command.PREPARE_BROADCAST_ACCEPT.getCommand();
+    }
 }

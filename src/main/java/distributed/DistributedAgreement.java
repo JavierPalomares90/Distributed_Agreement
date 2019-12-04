@@ -56,6 +56,7 @@ public class DistributedAgreement
         peers.remove(host);
         serverThread.setPeers(peers);
         serverThread.setPort(host.getPort());
+        serverThread.setServerId(host.getServerId());
         new Thread(serverThread).start();
     }
 

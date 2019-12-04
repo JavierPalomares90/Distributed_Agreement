@@ -106,26 +106,33 @@ public class MessageThread implements Runnable
     private String receiveSafeRequest(String[] tokens)
     {
         ByzAcceptor acceptor = new ByzAcceptor();
-        acceptor.receiveSafeRequest(tokens);
-
-        return null;
+        acceptor.setServerThread(this.serverThread);
+        acceptor.setLock(lock);
+        acceptor.setPhase2Condition(phase2Condition);
+        acceptor.setAcceptors(this.peers);
+        return acceptor.receiveSafeRequest(tokens);
     }
 
     private String receiveSafeBroadcast(String[] tokens)
     {
-        /**
-         * TODO: Complete impl
-         */
-        return null;
+
+        ByzAcceptor acceptor = new ByzAcceptor();
+        acceptor.setServerThread(this.serverThread);
+        acceptor.setLock(lock);
+        acceptor.setPhase2Condition(phase2Condition);
+        acceptor.setAcceptors(this.peers);
+        return acceptor.receiveSafeBroadcast(tokens);
 
     }
 
     private String receivePrepareBroadcast(String[] tokens)
     {
-        /**
-         * TODO: Complete impl
-         */
-        return null;
+        ByzAcceptor acceptor = new ByzAcceptor();
+        acceptor.setServerThread(this.serverThread);
+        acceptor.setLock(lock);
+        acceptor.setPhase2Condition(phase2Condition);
+        acceptor.setAcceptors(this.peers);
+        return acceptor.receivePrepareBroadcast(tokens);
 
     }
 

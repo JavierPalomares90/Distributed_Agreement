@@ -22,6 +22,8 @@ public class ServerThread implements Runnable
     private static Logger logger = Logger.getLogger(ServerThread.class);
 
     @Getter @Setter(AccessLevel.PUBLIC)
+    private Integer serverId;
+    @Getter @Setter(AccessLevel.PUBLIC)
     private Integer port;
     @Getter @Setter(AccessLevel.PUBLIC)
     private String ipAddress;
@@ -44,6 +46,13 @@ public class ServerThread implements Runnable
     // The Paxos value
     @Getter @Setter(AccessLevel.PUBLIC)
     private String paxosValue;
+
+    // The Proposed Paxos Id
+    @Getter @Setter(AccessLevel.PUBLIC)
+    private AtomicInteger proposedPaxosId;
+    // The Propose Paxos value
+    @Getter @Setter(AccessLevel.PUBLIC)
+    private String proposedPaxosValue;
 
     // The Safe Paxos Id
     @Getter @Setter(AccessLevel.PUBLIC)
