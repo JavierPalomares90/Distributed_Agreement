@@ -52,6 +52,8 @@ public class ServerThread implements Runnable
     private AtomicFloat weightPromisesRejected;
     @Getter @Setter(AccessLevel.PRIVATE)
     private AtomicFloat weightAcceptsRejected;
+    @Getter @Setter(AccessLevel.PRIVATE)
+    private AtomicFloat ownWeight;
 
     // The Paxos Id
     @Getter @Setter(AccessLevel.PUBLIC)
@@ -87,8 +89,10 @@ public class ServerThread implements Runnable
     }
 
 
-    public ServerThread()
+    public ServerThread(AtomicFloat weight)
     {
+        this.ownWeight = weight;
+        
         paxosId = new AtomicInteger(0);
         threadLock = new ReentrantLock();
         waitForPromises = threadLock.newCondition();
