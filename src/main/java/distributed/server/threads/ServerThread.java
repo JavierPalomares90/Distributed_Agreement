@@ -87,9 +87,9 @@ public class ServerThread implements Runnable
     }
 
 
-    public ServerThread(AtomicFloat weight)
+    public ServerThread(Float weight)
     {
-        this.ownWeight = weight;
+        this.ownWeight = new AtomicFloat(weight);
         
         paxosId = new AtomicInteger(0);
         threadLock = new ReentrantLock();
