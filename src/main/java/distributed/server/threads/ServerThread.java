@@ -32,13 +32,13 @@ public class ServerThread implements Runnable
 
 
     @Getter @Setter(AccessLevel.PRIVATE)
-    private AtomicInteger numPromises;
+    private AtomicFloat weightedPromises;
     @Getter @Setter(AccessLevel.PRIVATE)
-    private AtomicInteger numAccepts;
+    private AtomicFloat weightedAccepts;
     @Getter @Setter(AccessLevel.PRIVATE)
-    private AtomicInteger numPromisesRejected;
+    private AtomicFloat weightPromisesRejected;
     @Getter @Setter(AccessLevel.PRIVATE)
-    private AtomicInteger numAcceptsRejected;
+    private AtomicFloat weightAcceptsRejected;
 
     // The Paxos Id
     @Getter @Setter(AccessLevel.PUBLIC)
@@ -67,16 +67,16 @@ public class ServerThread implements Runnable
     private Thread paxosThread;
 
     private final Lock threadLock;
-    // Conditionals to wait for promises and accepts from a majority
+    // Conditionals to wait for promises and accepts from a Byzquorum of weights
     private final Condition waitForPromises;
     private final Condition waitForAccepts;
 
     public void init()
     {
-        numPromises = new AtomicInteger(0);
-        numAccepts = new AtomicInteger(0);
-        numAcceptsRejected = new AtomicInteger(0);
-        numPromisesRejected = new AtomicInteger(0);
+        weightPromises = new AtomicFloat();
+        weightAccepts = new AtomicFloat();
+        weightAcceptsRejected = new AtomicFloat();
+        weightPromisesRejected = new AtomicFloat();
     }
 
 
@@ -88,27 +88,27 @@ public class ServerThread implements Runnable
         waitForAccepts = threadLock.newCondition();
     }
 
-    public void incrementNumPromisesRejected()
+    public void updateWeightPromisesRejected(float responderWeight)
     {
-        int numPromisesRejected = this.numPromisesRejected.incrementAndGet();
-        int numServers = this.peers.size() + 1;
-        if(numPromisesRejected > (numServers/2) + 1)
+        this.weightPromisesRejected.set(this.weightPromisesRejected.get() + responderWeight);
+        double weightPromisesRejected = this.weightPromisesRejected.get();
+        if(weightAcceptsRejected > 0.33)
         {
-            logger.debug("Majority of servers rejected the prepare");
-            // majority of peers have rejected, stop waiting for phase2
+            logger.debug("No Byzquorum possible.");
+            // enough weights of peers have rejected, stop waiting for promise (phase 1)
             notifyPromises();
         }
 
     }
 
 
-    public void incrementNumAcceptsRejected()
+    public void updateWeightAcceptsRejected(float responderWeight)
     {
-        int numAcceptsRejected = this.numAcceptsRejected.incrementAndGet();
-        int numServers = this.peers.size() + 1;
-        if(numAcceptsRejected > (numServers/2) + 1)
+        this.weightAcceptsRejected.set(this.weightAcceptsRejected.get() + responderWeight);
+        double weightAcceptsRejected = this.weightAcceptsRejected.get();
+        if(weightAcceptsRejected > 0.33)
         {
-            logger.debug("Majority of servers rejected the accept");
+            logger.debug("No Byzquorum possible.");
             notifyAccepts();
 
         }
@@ -117,7 +117,7 @@ public class ServerThread implements Runnable
 
     private void notifyAccepts()
     {
-        // majority of peers have rejected, stop waiting for agreement
+        // enough weights of peers have rejected, stop waiting for agreement (phase 2)
         threadLock.lock();
         synchronized (waitForAccepts)
         {
@@ -138,21 +138,21 @@ public class ServerThread implements Runnable
         threadLock.unlock();
     }
 
-    public void incrementNumPromises()
+    public void updatePromisedWeight(double responderWeight)
     {
-        int numPromises = this.numPromises.incrementAndGet();
-        int numServers = this.peers.size() + 1;
-        if(numPromises >= (numServers/2) + 1)
+        this.weightedPromises.set(this.weightedPromises.get() + responderWeight);
+        float weightedPromises = this.weightedPromises.get();
+        if(weightedPromises >= 0.67)
         {
             notifyPromises();
         }
     }
 
-    public void incrementNumAccepts()
+    public void updateAcceptedWeight(double responderWeight)
     {
-        int numAccepts = this.numAccepts.incrementAndGet();
-        int numServers = this.peers.size() + 1;
-        if(numAccepts >= (numServers/2) + 1)
+        this.weightedAccepts.set(this.weightedAccepts.get() + responderWeight);
+        float weightedAccepts = this.weightedAccepts.get();
+        if(weightedAccepts >= 0.67)
         {
             notifyAccepts();
         }
