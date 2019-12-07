@@ -93,7 +93,7 @@ public class ServerThread implements Runnable
     {
         this.weightPromisesRejected.set(this.weightPromisesRejected.get() + responderWeight);
         double weightPromisesRejected = this.weightPromisesRejected.get();
-        if(weightAcceptsRejected > 0.33)
+        if(weightAcceptsRejected.get() > 1.0/3)
         {
             logger.debug("No Byzquorum possible.");
             // enough weights of peers have rejected, stop waiting for promise (phase 1)
@@ -107,7 +107,7 @@ public class ServerThread implements Runnable
     {
         this.weightAcceptsRejected.set(this.weightAcceptsRejected.get() + responderWeight);
         double weightAcceptsRejected = this.weightAcceptsRejected.get();
-        if(weightAcceptsRejected > 0.33)
+        if(weightAcceptsRejected > 1.0/3)
         {
             logger.debug("No Byzquorum possible.");
             notifyAccepts();
@@ -141,9 +141,9 @@ public class ServerThread implements Runnable
 
     public void updatePromisedWeight(double responderWeight)
     {
-        this.weightedPromises.set(this.weightedPromises.get() + responderWeight);
+        this.weightedPromises.set((float)(this.weightedPromises.get() + responderWeight));
         float weightedPromises = this.weightedPromises.get();
-        if(weightedPromises >= 0.67)
+        if(weightedPromises > 2.0/3)
         {
             notifyPromises();
         }
@@ -151,9 +151,9 @@ public class ServerThread implements Runnable
 
     public void updateAcceptedWeight(double responderWeight)
     {
-        this.weightedAccepts.set(this.weightedAccepts.get() + responderWeight);
+        this.weightedAccepts.set((float)(this.weightedAccepts.get() + responderWeight));
         float weightedAccepts = this.weightedAccepts.get();
-        if(weightedAccepts >= 0.67)
+        if(weightedAccepts > 2.0/3)
         {
             notifyAccepts();
         }
