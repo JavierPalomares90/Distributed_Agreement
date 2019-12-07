@@ -174,7 +174,7 @@ public class MessageThread implements Runnable
                 return receiveAcceptRequest(tokens) ;
             }
         }
-        else if(Command.ACCEPT.getCommand().equals(sender)
+        else if(Command.ACCEPT.getCommand().equals(sender))
         {
             // A peer sent a response to our accept request
             receiveAcceptResponse(sender);
