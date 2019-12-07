@@ -3,7 +3,7 @@ package distributed.server.pojos;
 import java.util.concurrent.atomic.AtomicInteger;
 import static java.lang.Float.*;
 
-class AtomicFloat extends Number {
+public class AtomicFloat extends Number {
 
     private AtomicInteger bits;
 
