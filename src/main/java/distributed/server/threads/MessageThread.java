@@ -214,12 +214,7 @@ public class MessageThread implements Runnable
             {
                 String msg = inputLine;
                 logger.debug("Processing message: " + msg);
-                Server sender = new Server();
-                sender.setIpAddress(socket.getInetAddress().getHostAddress());
-                sender.setPort(socket.getPort());
-                /**
-                 * TODO: Get the weight and serverId
-                 */
+
                 String response = processMessage(msg,sender);
 
                 // Increment the logical clock on response
