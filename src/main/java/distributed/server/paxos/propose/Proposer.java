@@ -60,9 +60,12 @@ public class Proposer
                 this.serverThread.setPaxosValue(value);
             }
         }
-
     }
 
+    /**
+     * Parse the responses from the acceptors
+     * @param response
+     */
     private void parseResponseFromAcceptor(String response)
     {
         logger.debug("Response from acceptor " + response);
@@ -96,6 +99,7 @@ public class Proposer
             }
         }
     }
+
 
     /**
      * Send the request to the acceptors
