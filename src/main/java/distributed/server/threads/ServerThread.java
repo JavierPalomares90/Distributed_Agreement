@@ -259,6 +259,21 @@ public class ServerThread implements Runnable
         threadLock.unlock();
         return result;
     }
+    
+    private static Server getSender(String ipAddr, Integer port, List<Server> peers)
+    {
+        for (Server server:peers)
+        {
+            if(ipAddr == server.getIpAddress())
+            {
+                if(port == server.getPort())
+                {
+                    return server;
+                }
+            }
+        }
+        return null;
+    }
 
     /**
      * Listen for messages from the peers
@@ -286,8 +301,12 @@ public class ServerThread implements Runnable
                 }
                 if(socket != null)
                 {
+                    // Get sender info to pass to MessageThread
+                    String senderIP = socket.getInetAddress().getHostAddress();
+                    Integer senderPort = socket.getPort();
+                    Server sender = getSender(senderIP, senderPort, peers);
                     // Spawn off a new thread to process messages from this client
-                    MessageThread clientThread = new MessageThread();
+                    MessageThread clientThread = new MessageThread(sender);
                     clientThread.setSocket(socket);
                     clientThread.setPeers(peers);
                     clientThread.setPhase1Condition(waitForPromises);
