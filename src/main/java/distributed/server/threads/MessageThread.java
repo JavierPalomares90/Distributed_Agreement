@@ -95,13 +95,13 @@ public class MessageThread implements Runnable
         return acceptor.receiveAcceptRequest(tokens);
     }
 
-    public synchronized String receiveAcceptResponse(String[] tokens)
+    public synchronized String receiveAcceptResponse(Server sender)
     {
-        ByzAcceptor acceptor = new ByzAcceptor();
+        Acceptor acceptor = new Acceptor();
         acceptor.setServerThread(this.serverThread);
         acceptor.setLock(lock);
         acceptor.setPhase2Condition(phase2Condition);
-        return acceptor.receiveAcceptResponse(tokens,peers.size()+1);
+        return acceptor.receiveAcceptResponse(sender);
     }
 
     private String receiveSafeRequest(String[] tokens)
