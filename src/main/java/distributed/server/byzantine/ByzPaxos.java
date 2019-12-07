@@ -49,7 +49,7 @@ public class ByzPaxos extends Paxos
             lock.unlock();
         }
 
-        if(this.serverThread.getWeightPromisesRejected().get() > 1.0/3))
+        if(this.serverThread.getWeightPromisesRejected().get() > 1.0/3)
         {
             return "Proposal failed";
         }
