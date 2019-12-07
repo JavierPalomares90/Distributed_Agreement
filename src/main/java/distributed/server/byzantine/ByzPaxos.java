@@ -35,7 +35,7 @@ public class ByzPaxos extends Paxos
         try
         {
             lock.lock();
-            while(this.serverThread.getNumPromises().get() < (numServers / 2  + 1))
+            while(this.serverThread.getWeightedPromises().get() < 2.0/3)
             {
                 logger.debug("Waiting for enough promises before moving onto phase 2");
                 phase1Condition.await();
@@ -49,7 +49,7 @@ public class ByzPaxos extends Paxos
             lock.unlock();
         }
 
-        if(this.serverThread.getNumPromisesRejected().get() < (numServers / 2  + 1))
+        if(this.serverThread.getWeightPromisesRejected().get() > 1.0/3))
         {
             return "Proposal failed";
         }
@@ -64,7 +64,7 @@ public class ByzPaxos extends Paxos
         try
         {
             lock.lock();
-            while(this.serverThread.getNumAccepts().get() < (numServers / 2  + 1))
+            while(this.serverThread.getWeightedAccepts().get() < 2.0/3)
             {
                 logger.debug("Waiting for enough accepts before agreeing to value");
 
@@ -79,7 +79,7 @@ public class ByzPaxos extends Paxos
             lock.unlock();
 
         }
-        if(this.serverThread.getNumAcceptsRejected().get() < (numServers / 2  + 1))
+        if(this.serverThread.getWeightAcceptsRejected().get() > 1.0/3)
         {
             return "Proposal failed";
         }
