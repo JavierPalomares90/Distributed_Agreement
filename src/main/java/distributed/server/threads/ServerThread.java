@@ -92,7 +92,7 @@ public class ServerThread implements Runnable
     public void updateWeightPromisesRejected(float responderWeight)
     {
         this.weightPromisesRejected.set(this.weightPromisesRejected.get() + responderWeight);
-        double weightPromisesRejected = this.weightPromisesRejected.get();
+        float weightPromisesRejected = this.weightPromisesRejected.get();
         if(weightAcceptsRejected.get() > 1.0/3)
         {
             logger.debug("No Byzquorum possible.");
@@ -106,7 +106,7 @@ public class ServerThread implements Runnable
     public void updateWeightAcceptsRejected(float responderWeight)
     {
         this.weightAcceptsRejected.set(this.weightAcceptsRejected.get() + responderWeight);
-        double weightAcceptsRejected = this.weightAcceptsRejected.get();
+        float weightAcceptsRejected = this.weightAcceptsRejected.get();
         if(weightAcceptsRejected > 1.0/3)
         {
             logger.debug("No Byzquorum possible.");
@@ -139,7 +139,7 @@ public class ServerThread implements Runnable
         threadLock.unlock();
     }
 
-    public void updatePromisedWeight(double responderWeight)
+    public void updatePromisedWeight(float responderWeight)
     {
         this.weightedPromises.set((float)(this.weightedPromises.get() + responderWeight));
         float weightedPromises = this.weightedPromises.get();
@@ -149,7 +149,7 @@ public class ServerThread implements Runnable
         }
     }
 
-    public void updateAcceptedWeight(double responderWeight)
+    public void updateAcceptedWeight(float responderWeight)
     {
         this.weightedAccepts.set((float)(this.weightedAccepts.get() + responderWeight));
         float weightedAccepts = this.weightedAccepts.get();
