@@ -78,11 +78,11 @@ public class MessageThread implements Runnable
         return acceptor.receivePrepareRequest(tokens);
     }
 
-    public synchronized String receivePromiseRequest(String[] tokens)
+    public synchronized String receivePromiseRequest(String[] tokens, Server sender)
     {
-        ByzAcceptor acceptor = new ByzAcceptor();
+        Acceptor acceptor = new Acceptor();
         acceptor.setServerThread(this.serverThread);
-        acceptor.receivePromiseRequest(tokens);
+        acceptor.receivePromiseRequest(tokens, sender);
         // Return null. Don't need to write anything back
         return null;
     }
@@ -138,7 +138,7 @@ public class MessageThread implements Runnable
     }
 
 
-    private String processMessage(String msg)
+    private String processMessage(String msg, Server sender)
     {
         String[] tokens = msg.split("\\s+");
         if(Command.PROPOSE.getCommand().equals(tokens[0]))
@@ -163,7 +163,7 @@ public class MessageThread implements Runnable
             // A peer promised to accept our prepare request
             if(tokens.length > 2)
             {
-                return receivePromiseRequest(tokens);
+                return receivePromiseRequest(tokens, sender);
             }
         }
         else if(Command.ACCEPT_REQUEST.getCommand().equals(tokens[0]))
@@ -174,10 +174,10 @@ public class MessageThread implements Runnable
                 return receiveAcceptRequest(tokens) ;
             }
         }
-        else if(Command.ACCEPT.getCommand().equals(tokens[0]))
+        else if(Command.ACCEPT.getCommand().equals(sender)
         {
             // A peer sent a response to our accept request
-            receiveAcceptResponse(tokens);
+            receiveAcceptResponse(sender);
 
         }
         else if(Command.SAFE_REQUEST.getCommand().equals(tokens[0])) {
@@ -196,7 +196,7 @@ public class MessageThread implements Runnable
         }
         return "Unable to process msg " + msg;
     }
-
+    
     public void run()
     {
         try
