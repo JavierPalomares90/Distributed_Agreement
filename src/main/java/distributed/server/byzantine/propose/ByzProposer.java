@@ -2,6 +2,8 @@ package distributed.server.byzantine.propose;
 
 import distributed.server.byzantine.requests.SafeRequest;
 import distributed.server.paxos.propose.Proposer;
+import distributed.server.paxos.requests.AcceptRequest;
+import distributed.server.paxos.requests.PrepareRequest;
 import distributed.server.paxos.requests.Request;
 import distributed.server.pojos.Server;
 import distributed.utils.Command;
@@ -30,7 +32,7 @@ public class ByzProposer extends Proposer
      */
      
     @Override
-    private void sendAcceptRequest(AcceptRequest acceptRequest, List<Server> acceptors)
+    protected void sendAcceptRequest(AcceptRequest acceptRequest, List<Server> acceptors)
     {
         sendRequest(acceptRequest, acceptors);
         // Increment the number of accepts for ourself
@@ -38,7 +40,7 @@ public class ByzProposer extends Proposer
     }
     
     @Override
-    private void sendPrepareRequest(PrepareRequest prepareRequest, List<Server> acceptors)
+    protected void sendPrepareRequest(PrepareRequest prepareRequest, List<Server> acceptors)
     {
         sendRequest(prepareRequest, acceptors);
         // Increment the number of promises for ourself

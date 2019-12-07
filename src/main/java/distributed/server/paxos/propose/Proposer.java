@@ -139,7 +139,7 @@ public class Proposer
      * @param acceptRequest
      * @param acceptors
      */
-    private void sendAcceptRequest(AcceptRequest acceptRequest, List<Server> acceptors)
+    protected void sendAcceptRequest(AcceptRequest acceptRequest, List<Server> acceptors)
     {
         sendRequest(acceptRequest, acceptors);
         // Increment the number of accepts for ourself
@@ -151,7 +151,7 @@ public class Proposer
      * @param prepareRequest
      * @param acceptors
      */
-    private void sendPrepareRequest(PrepareRequest prepareRequest, List<Server> acceptors)
+    protected void sendPrepareRequest(PrepareRequest prepareRequest, List<Server> acceptors)
     {
         sendRequest(prepareRequest, acceptors);
         // Increment the number of promises for ourself

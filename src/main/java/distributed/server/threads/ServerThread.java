@@ -32,6 +32,8 @@ public class ServerThread implements Runnable
     private String ipAddress;
     @Getter @Setter(AccessLevel.PUBLIC)
     private List<Server> peers;
+    @Getter @Setter(AccessLevel.PUBLIC)
+    private AtomicFloat ownWeight;
 
     @Getter @Setter(AccessLevel.PRIVATE)
     private AtomicInteger numPromises;

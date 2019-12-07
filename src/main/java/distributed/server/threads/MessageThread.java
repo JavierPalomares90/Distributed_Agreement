@@ -80,7 +80,7 @@ public class MessageThread implements Runnable
 
     public synchronized String receivePromiseRequest(String[] tokens, Server sender)
     {
-        Acceptor acceptor = new Acceptor();
+        ByzAcceptor acceptor = new ByzAcceptor();
         acceptor.setServerThread(this.serverThread);
         acceptor.receivePromiseRequest(tokens, sender);
         // Return null. Don't need to write anything back
@@ -97,7 +97,7 @@ public class MessageThread implements Runnable
 
     public synchronized String receiveAcceptResponse(Server sender)
     {
-        Acceptor acceptor = new Acceptor();
+        ByzAcceptor acceptor = new ByzAcceptor();
         acceptor.setServerThread(this.serverThread);
         acceptor.setLock(lock);
         acceptor.setPhase2Condition(phase2Condition);
@@ -209,7 +209,14 @@ public class MessageThread implements Runnable
             {
                 String msg = inputLine;
                 logger.debug("Processing message: " + msg);
-                String response = processMessage(msg);
+                Server sender = new Server();
+                sender.setIpAddress(socket.getInetAddress().getHostAddress());
+                sender.setPort(socket.getPort());
+                /**
+                 * TODO: Get the weight and serverId
+                 */
+                String response = processMessage(msg,sender);
+
                 // Increment the logical clock on response
                 if(response != null)
                 {

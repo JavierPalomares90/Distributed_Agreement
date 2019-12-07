@@ -52,8 +52,13 @@ public class ByzAcceptor extends Acceptor
         new Thread(broadcastSafeRunnable).start();
         return null;
     }
-    
-    @Override
+
+    /**
+     * TODO: Match the signatures so this method is overriden
+     * @param tokens
+     * @param sender
+     * @return
+     */
     public String receivePromiseRequest(String[] tokens, Server sender)
     {
         logger.debug("Received promise request");
@@ -84,8 +89,12 @@ public class ByzAcceptor extends Acceptor
         // Value is safe, follow the paxos algo for receiving accept request
         return super.receiveAcceptRequest(tokens);
     }
-    
-    @Override
+
+    /**
+     * TODO: Check if this is the correct input to this method
+     * @param sender
+     * @return
+     */
     public synchronized String receiveAcceptResponse(Server sender)
     {
         this.serverThread.getWeightedAccepts().set(this.serverThread.getWeightedAccepts().get() + sender.getWeight());
