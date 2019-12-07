@@ -2,6 +2,7 @@ package distributed.server.threads;
 
 import distributed.server.paxos.Paxos;
 import distributed.server.pojos.Server;
+import distributed.server.pojos.AtomicFloat;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -73,8 +74,8 @@ public class ServerThread implements Runnable
 
     public void init()
     {
-        weightPromises = new AtomicFloat();
-        weightAccepts = new AtomicFloat();
+        weightedPromises = new AtomicFloat();
+        weightedAccepts = new AtomicFloat();
         weightAcceptsRejected = new AtomicFloat();
         weightPromisesRejected = new AtomicFloat();
     }
