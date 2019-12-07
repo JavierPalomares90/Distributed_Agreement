@@ -40,7 +40,12 @@ public class MessageThread implements Runnable
 
     @Setter(AccessLevel.PUBLIC)
     private Lock lock;
+    
+    private Server sender;
 
+    public MessageThread(Server sender) {
+        this.sender = sender;
+    }
 
    // Start the paxos algorithm to propose the value
     private String proposeValue(String value)
