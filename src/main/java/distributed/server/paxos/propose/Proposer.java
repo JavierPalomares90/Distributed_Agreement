@@ -29,8 +29,8 @@ public class Proposer
         logger.debug("Sending request " + request.toString() + " to acceptor" + acceptor);
         String command = request.toString();
         // Send the command over TCP
-        String response = Utils.sendTcpMessage(acceptor,command, waitForResponse);
-        parseResponseFromAcceptor(response);
+        String response = Utils.sendTcpMessage(acceptor, command, waitForResponse);
+        parseResponseFromAcceptor(response, acceptor.getWeight());
 
     }
 
@@ -66,7 +66,7 @@ public class Proposer
      * Parse the responses from the acceptors
      * @param response
      */
-    private void parseResponseFromAcceptor(String response)
+    private void parseResponseFromAcceptor(String response, Float weight)
     {
         logger.debug("Response from acceptor " + response);
         String[] tokens = response.split("\\s+");
@@ -78,24 +78,24 @@ public class Proposer
                 // Update the id
                 updateIdAndValue(tokens);
                 // the prepare request was accepted
-                this.serverThread.incrementNumPromises();
+                this.serverThread.updatePromisedWeight(weight);
 
             }else if (Command.ACCEPT.getCommand().equals(tokens[0]))
             {
                 // the accept reqeust was accepted
                 updateId(tokens);
-                this.serverThread.incrementNumAccepts();
+                this.serverThread.updateAcceptedWeight(weight);
             }else if(Command.REJECT_PREPARE.getCommand().equals(tokens[0]))
             {
                 // the prepare request was rejected
                 updateIdAndValue(tokens);
-                this.serverThread.incrementNumPromisesRejected();
+                this.serverThread.updateWeightPromisesRejected(weight);
 
             }else if(Command.REJECT_ACCEPT.getCommand().equals(tokens[0]))
             {
                 // The accept request was rejected
                 updateId(tokens);
-                this.serverThread.incrementNumAcceptsRejected();
+                this.serverThread.updateWeightAcceptsRejected(weight);
             }
         }
     }

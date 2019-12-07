@@ -4,6 +4,7 @@ import distributed.server.paxos.Paxos;
 import distributed.server.pojos.ProposedValue;
 import distributed.server.pojos.SafeValue;
 import distributed.server.pojos.Server;
+import distributed.server.pojos.AtomicFloat;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -32,7 +33,6 @@ public class ServerThread implements Runnable
     @Getter @Setter(AccessLevel.PUBLIC)
     private List<Server> peers;
 
-
     @Getter @Setter(AccessLevel.PRIVATE)
     private AtomicInteger numPromises;
     @Getter @Setter(AccessLevel.PRIVATE)
@@ -41,6 +41,15 @@ public class ServerThread implements Runnable
     private AtomicInteger numPromisesRejected;
     @Getter @Setter(AccessLevel.PRIVATE)
     private AtomicInteger numAcceptsRejected;
+
+    @Getter @Setter(AccessLevel.PRIVATE)
+    private AtomicFloat weightedPromises;
+    @Getter @Setter(AccessLevel.PRIVATE)
+    private AtomicFloat weightedAccepts;
+    @Getter @Setter(AccessLevel.PRIVATE)
+    private AtomicFloat weightPromisesRejected;
+    @Getter @Setter(AccessLevel.PRIVATE)
+    private AtomicFloat weightAcceptsRejected;
 
     // The Paxos Id
     @Getter @Setter(AccessLevel.PUBLIC)
@@ -57,7 +66,7 @@ public class ServerThread implements Runnable
     private Thread paxosThread;
 
     private final Lock threadLock;
-    // Conditionals to wait for promises and accepts from a majority
+    // Conditionals to wait for promises and accepts from a Byzquorum of weights
     private final Condition waitForPromises;
     private final Condition waitForAccepts;
 
@@ -69,6 +78,10 @@ public class ServerThread implements Runnable
         numPromisesRejected = new AtomicInteger(0);
         safeValues = new HashMap<>();
         proposedValues = new HashMap<>();
+        weightedPromises = new AtomicFloat();
+        weightedAccepts = new AtomicFloat();
+        weightAcceptsRejected = new AtomicFloat();
+        weightPromisesRejected = new AtomicFloat();
     }
 
 
@@ -78,6 +91,26 @@ public class ServerThread implements Runnable
         threadLock = new ReentrantLock();
         waitForPromises = threadLock.newCondition();
         waitForAccepts = threadLock.newCondition();
+    }
+
+    public void incrementNumPromises()
+    {
+        int numPromises = this.numPromises.incrementAndGet();
+        int numServers = this.peers.size() + 1;
+        if(numPromises >= (numServers/2) + 1)
+        {
+            notifyPromises();
+        }
+    }
+
+    public void incrementNumAccepts()
+    {
+        int numAccepts = this.numAccepts.incrementAndGet();
+        int numServers = this.peers.size() + 1;
+        if(numAccepts >= (numServers/2) + 1)
+        {
+            notifyAccepts();
+        }
     }
 
     public void incrementNumPromisesRejected()
@@ -107,9 +140,36 @@ public class ServerThread implements Runnable
 
     }
 
+    public void updateWeightPromisesRejected(float responderWeight)
+    {
+        this.weightPromisesRejected.set(this.weightPromisesRejected.get() + responderWeight);
+        float weightPromisesRejected = this.weightPromisesRejected.get();
+        if(weightAcceptsRejected.get() > 1.0/3)
+        {
+            logger.debug("No Byzquorum possible.");
+            // enough weights of peers have rejected, stop waiting for promise (phase 1)
+            notifyPromises();
+        }
+
+    }
+
+
+    public void updateWeightAcceptsRejected(float responderWeight)
+    {
+        this.weightAcceptsRejected.set(this.weightAcceptsRejected.get() + responderWeight);
+        float weightAcceptsRejected = this.weightAcceptsRejected.get();
+        if(weightAcceptsRejected > 1.0/3)
+        {
+            logger.debug("No Byzquorum possible.");
+            notifyAccepts();
+
+        }
+
+    }
+
     private void notifyAccepts()
     {
-        // majority of peers have rejected, stop waiting for agreement
+        // enough weights of peers have rejected, stop waiting for agreement (phase 2)
         threadLock.lock();
         synchronized (waitForAccepts)
         {
@@ -130,21 +190,21 @@ public class ServerThread implements Runnable
         threadLock.unlock();
     }
 
-    public void incrementNumPromises()
+    public void updatePromisedWeight(float responderWeight)
     {
-        int numPromises = this.numPromises.incrementAndGet();
-        int numServers = this.peers.size() + 1;
-        if(numPromises >= (numServers/2) + 1)
+        this.weightedPromises.set((float)(this.weightedPromises.get() + responderWeight));
+        float weightedPromises = this.weightedPromises.get();
+        if(weightedPromises > 2.0/3)
         {
             notifyPromises();
         }
     }
 
-    public void incrementNumAccepts()
+    public void updateAcceptedWeight(float responderWeight)
     {
-        int numAccepts = this.numAccepts.incrementAndGet();
-        int numServers = this.peers.size() + 1;
-        if(numAccepts >= (numServers/2) + 1)
+        this.weightedAccepts.set((float)(this.weightedAccepts.get() + responderWeight));
+        float weightedAccepts = this.weightedAccepts.get();
+        if(weightedAccepts > 2.0/3)
         {
             notifyAccepts();
         }
