@@ -52,6 +52,19 @@ public class ByzAcceptor extends Acceptor
         new Thread(broadcastSafeRunnable).start();
         return null;
     }
+    
+    @Override
+    public String receivePromiseRequest(String[] tokens, Server sender)
+    {
+        logger.debug("Received promise request");
+        int id = Integer.parseInt(tokens[1]);
+        if(id > this.serverThread.getPaxosId().get())
+        {
+            this.serverThread.getPaxosId().set(id);
+        }
+        this.serverThread.updatePromisedWeight(sender.getWeight());
+        return "Received promise request";
+    }
 
     @Override
     public String receiveAcceptRequest(String[] tokens)
@@ -70,6 +83,20 @@ public class ByzAcceptor extends Acceptor
         }
         // Value is safe, follow the paxos algo for receiving accept request
         return super.receiveAcceptRequest(tokens);
+    }
+    
+    @Override
+    public synchronized String receiveAcceptResponse(Server sender)
+    {
+        this.serverThread.getWeightedAccepts().set(this.serverThread.getWeightedAccepts().get() + sender.getWeight());
+        if(this.serverThread.getWeightedAccepts().get() > 2.0/3)
+        {
+            lock.lock();
+            // We've received enough accepts. can agree on a value
+            this.phase2Condition.signalAll();
+            lock.unlock();
+        }
+        return "Agreed to value";
     }
 
 
