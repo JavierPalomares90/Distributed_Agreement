@@ -2,6 +2,8 @@ package distributed.server.byzantine.accept;
 
 import distributed.server.paxos.accept.Acceptor;
 import distributed.server.paxos.requests.Request;
+import distributed.server.pojos.ProposedValue;
+import distributed.server.pojos.SafeValue;
 import distributed.server.pojos.Server;
 import distributed.utils.Command;
 import distributed.utils.Utils;
@@ -10,6 +12,7 @@ import lombok.Setter;
 import org.apache.log4j.Logger;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Byzantine acceptor
@@ -30,27 +33,45 @@ public class ByzAcceptor extends Acceptor
         int id = Integer.parseInt(tokens[1]);
         String value = tokens[2];
         logger.debug("Received safe request with id: " + id + " value: " + value);
+        SafeValue safeValue = new SafeValue();
+        safeValue.setId(id);
+        safeValue.setValue(value);
+        // Add the value, mark it as not safe for not
+        this.serverThread.addSafeValue(safeValue,false);
 
-        // Set the safe id and value
-        this.serverThread.getSafePaxosId().set(id);
-        this.serverThread.setSafePaxosValue(value);
-        logger.debug("Set safe id and value " + id + " " + value);
 
         // Broadcast the safe to the rest of the acceptors
         Runnable broadcastSafeRunnable = () ->
         {
             logger.debug("Broadcasting safe request to other acceptors");
             boolean isValueSafe = broadcastSafeRequest(id,value,this.acceptors);
-            // Mark the value as safe or not
-            this.serverThread.getValueIsSafe().set(isValueSafe);
-            /**
-             * TODO: reject if the broadcast did not reach a quorum.
-             * If the request is successful, send the proposer the accept message
-             */
+
+            // Mark the value as safe
+            this.serverThread.addSafeValue(safeValue,isValueSafe);
         };
         new Thread(broadcastSafeRunnable).start();
         return null;
     }
+
+    @Override
+    public String receiveAcceptRequest(String[] tokens)
+    {
+        int id = Integer.parseInt(tokens[1]);
+        String value = tokens[2];
+        SafeValue safeValue = new SafeValue();
+        safeValue.setId(id);
+        safeValue.setValue(value);
+        // check that the value is safe
+        AtomicBoolean isValueSafe = this.serverThread.isValueSafe(safeValue);
+        if (isValueSafe == null || isValueSafe.get() == false)
+        {
+            // Value is not safe. reject the request
+            return Command.REJECT_ACCEPT.getCommand() + " " + id + " " + value;
+        }
+        // Value is safe, follow the paxos algo for receiving accept request
+        return super.receiveAcceptRequest(tokens);
+    }
+
 
     @Override
     public String receivePrepareRequest(String[] tokens)
@@ -144,14 +165,12 @@ public class ByzAcceptor extends Acceptor
         int id = Integer.parseInt(tokens[1]);
         String value = tokens[2];
 
-        // Check the id of the broadcast matches what we received
-        if(this.serverThread.getSafePaxosId() == null || (this.serverThread.getSafePaxosId().get() != id))
-        {
-            // The safe request that was broadcast doesn't match what we've received
-            return Command.SAFE_BROADCAST_REJECT.getCommand();
-        }
-        // check the value of the broadcast matches waht we received
-        if(this.serverThread.getSafePaxosValue() == null || (this.serverThread.getSafePaxosValue().equals(value) == false) )
+        SafeValue safeValue = new SafeValue();
+        safeValue.setId(id);
+        safeValue.setValue(value);
+
+        // Check that we've receive this request previously
+        if(this.serverThread.isValueSafe(safeValue) == null)
         {
             // The safe request that was broadcast doesn't match what we've received
             return Command.SAFE_BROADCAST_REJECT.getCommand();
@@ -164,14 +183,11 @@ public class ByzAcceptor extends Acceptor
     {
         int id = Integer.parseInt(tokens[1]);
         String value = tokens[2];
+        ProposedValue proposedValue = new ProposedValue();
+        proposedValue.setId(id);
+        proposedValue.setValue(value);
         // Check the id of the broadcast matches what we received
-        if(this.serverThread.getProposedPaxosId() == null || (this.serverThread.getProposedPaxosId().get() != id))
-        {
-            // The safe request that was broadcast doesn't match what we've received
-            return Command.PREPARE_BROADCAST_REJECT.getCommand();
-        }
-        // check the value of the broadcast matches waht we received
-        if(this.serverThread.getProposedPaxosValue() == null || (this.serverThread.getProposedPaxosValue().equals(value) ==  false))
+        if(this.serverThread.isValueProposed(proposedValue) == null)
         {
             // The safe request that was broadcast doesn't match what we've received
             return Command.PREPARE_BROADCAST_REJECT.getCommand();

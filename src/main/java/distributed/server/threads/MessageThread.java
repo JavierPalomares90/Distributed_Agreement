@@ -1,5 +1,6 @@
 package distributed.server.threads;
 
+import distributed.server.byzantine.ByzPaxos;
 import distributed.server.byzantine.accept.ByzAcceptor;
 import distributed.server.paxos.Paxos;
 import distributed.server.paxos.accept.Acceptor;
@@ -46,7 +47,7 @@ public class MessageThread implements Runnable
     {
         logger.debug("Proposing value using paxos: " + value);
 
-        Paxos paxos = new Paxos();
+        ByzPaxos paxos = new ByzPaxos();
         paxos.setValue(value);
         paxos.setServers(this.peers);
         paxos.setPhase1Condition(this.phase1Condition);
@@ -72,14 +73,14 @@ public class MessageThread implements Runnable
 
     public String receivePrepareRequest(String[] tokens)
     {
-        Acceptor acceptor = new Acceptor();
+        ByzAcceptor acceptor = new ByzAcceptor();
         acceptor.setServerThread(this.serverThread);
         return acceptor.receivePrepareRequest(tokens);
     }
 
     public synchronized String receivePromiseRequest(String[] tokens)
     {
-        Acceptor acceptor = new Acceptor();
+        ByzAcceptor acceptor = new ByzAcceptor();
         acceptor.setServerThread(this.serverThread);
         acceptor.receivePromiseRequest(tokens);
         // Return null. Don't need to write anything back
@@ -89,14 +90,14 @@ public class MessageThread implements Runnable
 
     public String receiveAcceptRequest(String[] tokens)
     {
-        Acceptor acceptor = new Acceptor();
+        ByzAcceptor acceptor = new ByzAcceptor();
         acceptor.setServerThread(this.serverThread);
         return acceptor.receiveAcceptRequest(tokens);
     }
 
     public synchronized String receiveAcceptResponse(String[] tokens)
     {
-        Acceptor acceptor = new Acceptor();
+        ByzAcceptor acceptor = new ByzAcceptor();
         acceptor.setServerThread(this.serverThread);
         acceptor.setLock(lock);
         acceptor.setPhase2Condition(phase2Condition);

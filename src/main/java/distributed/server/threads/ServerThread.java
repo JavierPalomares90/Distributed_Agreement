@@ -1,6 +1,8 @@
 package distributed.server.threads;
 
 import distributed.server.paxos.Paxos;
+import distributed.server.pojos.ProposedValue;
+import distributed.server.pojos.SafeValue;
 import distributed.server.pojos.Server;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -10,7 +12,7 @@ import org.apache.log4j.Logger;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
@@ -47,21 +49,9 @@ public class ServerThread implements Runnable
     @Getter @Setter(AccessLevel.PUBLIC)
     private String paxosValue;
 
-    // The Proposed Paxos Id
-    @Getter @Setter(AccessLevel.PUBLIC)
-    private AtomicInteger proposedPaxosId;
-    // The Propose Paxos value
-    @Getter @Setter(AccessLevel.PUBLIC)
-    private String proposedPaxosValue;
-
-    // The Safe Paxos Id
-    @Getter @Setter(AccessLevel.PUBLIC)
-    private AtomicInteger safePaxosId;
-    // The Safe Paxos value
-    @Getter @Setter(AccessLevel.PUBLIC)
-    private String safePaxosValue;
-    @Getter @Setter(AccessLevel.PUBLIC)
-    private AtomicBoolean valueIsSafe = new AtomicBoolean(false);
+    // Proposed and Safe Values
+    private Map<SafeValue,AtomicBoolean> safeValues;
+    private Map<ProposedValue,AtomicBoolean> proposedValues;
 
     @Getter @Setter(AccessLevel.PUBLIC)
     private Thread paxosThread;
@@ -77,6 +67,8 @@ public class ServerThread implements Runnable
         numAccepts = new AtomicInteger(0);
         numAcceptsRejected = new AtomicInteger(0);
         numPromisesRejected = new AtomicInteger(0);
+        safeValues = new HashMap<>();
+        proposedValues = new HashMap<>();
     }
 
 
@@ -168,10 +160,28 @@ public class ServerThread implements Runnable
         threadLock.unlock();
     }
 
-    public void setSafePaxosValue(String value)
+    public AtomicBoolean isValueSafe(SafeValue value)
+    {
+        return safeValues.get(value);
+    }
+
+    public AtomicBoolean isValueProposed(ProposedValue value)
+    {
+        return proposedValues.get(value);
+    }
+
+
+    public void addSafeValue(SafeValue value, boolean isSafe)
     {
         threadLock.lock();
-        safePaxosValue = String.copyValueOf(value.toCharArray());
+        safeValues.put(value, new AtomicBoolean(isSafe));
+        threadLock.unlock();
+    }
+
+    public void addProposedValue(ProposedValue value)
+    {
+        threadLock.lock();
+        proposedValues.put(value,new AtomicBoolean(true));
         threadLock.unlock();
     }
 
