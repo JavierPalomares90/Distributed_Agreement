@@ -16,6 +16,9 @@ public class ByzPaxos extends Paxos
     @Override
     public String proposeValue(String value, List<Server> servers)
     {
+        // Update paxosValue
+        this.serverThread.setPaxosValue(value);
+    
         // Increment the paxos id
         int id =  this.serverThread.getPaxosId().incrementAndGet();
 
