@@ -80,6 +80,7 @@ public class MessageThread implements Runnable
     {
         ByzAcceptor acceptor = new ByzAcceptor();
         acceptor.setServerThread(this.serverThread);
+        acceptor.setAcceptors(this.peers);
         return acceptor.receivePrepareRequest(tokens);
     }
 
@@ -89,6 +90,7 @@ public class MessageThread implements Runnable
         acceptor.setServerThread(this.serverThread);
         acceptor.receivePromiseRequest(tokens, sender);
         // Return null. Don't need to write anything back
+        acceptor.setAcceptors(this.peers);
         return null;
     }
 
@@ -97,6 +99,7 @@ public class MessageThread implements Runnable
     {
         ByzAcceptor acceptor = new ByzAcceptor();
         acceptor.setServerThread(this.serverThread);
+        acceptor.setAcceptors(this.peers);
         return acceptor.receiveAcceptRequest(tokens);
     }
 
@@ -106,6 +109,7 @@ public class MessageThread implements Runnable
         acceptor.setServerThread(this.serverThread);
         acceptor.setLock(lock);
         acceptor.setPhase2Condition(phase2Condition);
+        acceptor.setAcceptors(this.peers);
         return acceptor.receiveAcceptResponse(sender);
     }
 
