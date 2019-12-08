@@ -22,9 +22,6 @@ public class Acceptor
     @Setter(AccessLevel.PUBLIC)
     protected Condition phase2Condition;
 
-    @Setter(AccessLevel.PUBLIC)
-    protected Lock lock;
-
     private static Logger logger = Logger.getLogger(Acceptor.class);
 
     public String receivePromiseRequest(String[] tokens)
@@ -57,10 +54,10 @@ public class Acceptor
         this.serverThread.getNumAccepts().getAndIncrement();
         if(this.serverThread.getNumAccepts().get() > (numServers/2) + 1)
         {
-            lock.lock();
+            this.serverThread.getThreadLock().lock();
             // We've received enough accepts. can agree on a value
             this.phase2Condition.signalAll();
-            lock.unlock();
+            this.serverThread.getThreadLock().unlock();
         }
         return "Agreed to value";
     }

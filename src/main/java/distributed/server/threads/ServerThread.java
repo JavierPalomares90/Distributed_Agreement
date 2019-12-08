@@ -5,6 +5,7 @@ import distributed.server.pojos.ProposedValue;
 import distributed.server.pojos.SafeValue;
 import distributed.server.pojos.Server;
 import distributed.server.pojos.AtomicFloat;
+import distributed.utils.Utils;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -67,10 +68,15 @@ public class ServerThread implements Runnable
     @Getter @Setter(AccessLevel.PUBLIC)
     private Thread paxosThread;
 
+    @Getter (AccessLevel.PUBLIC)
     private final Lock threadLock;
     // Conditionals to wait for promises and accepts from a Byzquorum of weights
     private final Condition waitForPromises;
+    private final Condition waitForSafe;
     private final Condition waitForAccepts;
+
+    @Getter
+    private AtomicBoolean safeBroadcastDone = new AtomicBoolean(false);
 
     public void init()
     {
@@ -95,6 +101,7 @@ public class ServerThread implements Runnable
         threadLock = new ReentrantLock();
         waitForPromises = threadLock.newCondition();
         waitForAccepts = threadLock.newCondition();
+        waitForSafe = threadLock.newCondition();
     }
 
     public void incrementNumPromises()
@@ -262,20 +269,6 @@ public class ServerThread implements Runnable
         return result;
     }
     
-    private static Server getSender(String ipAddr, Integer port, List<Server> peers)
-    {
-        for (Server server:peers)
-        {
-            if(ipAddr == server.getIpAddress())
-            {
-                if(port == server.getPort())
-                {
-                    return server;
-                }
-            }
-        }
-        return null;
-    }
 
     /**
      * Listen for messages from the peers
@@ -306,15 +299,15 @@ public class ServerThread implements Runnable
                     // Get sender info to pass to MessageThread
                     String senderIP = socket.getInetAddress().getHostAddress();
                     Integer senderPort = socket.getPort();
-                    Server sender = getSender(senderIP, senderPort, peers);
+                    Server sender = Utils.getSender(senderIP, senderPort, peers);
                     // Spawn off a new thread to process messages from this client
                     MessageThread clientThread = new MessageThread(sender);
                     clientThread.setSocket(socket);
                     clientThread.setPeers(peers);
                     clientThread.setPhase1Condition(waitForPromises);
+                    clientThread.setPhase1cCondition(waitForSafe);
                     clientThread.setPhase2Condition(waitForAccepts);
                     clientThread.setServerThread(this);
-                    clientThread.setLock(threadLock);
                     new Thread(clientThread).start();
                 }
             }

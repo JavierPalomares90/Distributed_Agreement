@@ -7,6 +7,7 @@ import distributed.server.paxos.accept.Acceptor;
 import distributed.server.pojos.Server;
 import distributed.utils.Command;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.Setter;
 import org.apache.log4j.Logger;
 
@@ -15,6 +16,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -39,8 +41,9 @@ public class MessageThread implements Runnable
     private Condition phase2Condition;
 
     @Setter(AccessLevel.PUBLIC)
-    private Lock lock;
-    
+    private Condition phase1cCondition;
+
+    @Getter
     private Server sender;
 
     public MessageThread(Server sender) {
@@ -58,7 +61,6 @@ public class MessageThread implements Runnable
         paxos.setPhase1Condition(this.phase1Condition);
         paxos.setPhase2Condition(this.phase2Condition);
         paxos.setServerThread(this.serverThread);
-        paxos.setLock(lock);
 
         Thread paxosThread = new Thread(paxos);
         // Before starting, check if there is already a paxos proposal running
@@ -80,7 +82,11 @@ public class MessageThread implements Runnable
     {
         ByzAcceptor acceptor = new ByzAcceptor();
         acceptor.setServerThread(this.serverThread);
-        acceptor.setAcceptors(this.peers);
+        List<Server> acceptors = new ArrayList<>(this.peers);
+        // Remove the sender from the list of acceptors to broadcast to
+        acceptors.remove(sender);
+        acceptor.setAcceptors(acceptors);
+        acceptor.setWaitForSafe(this.phase1cCondition);
         return acceptor.receivePrepareRequest(tokens);
     }
 
@@ -88,9 +94,10 @@ public class MessageThread implements Runnable
     {
         ByzAcceptor acceptor = new ByzAcceptor();
         acceptor.setServerThread(this.serverThread);
+        acceptor.setWaitForSafe(this.phase1cCondition);
+        acceptor.setAcceptors(this.peers);
         acceptor.receivePromiseRequest(tokens, sender);
         // Return null. Don't need to write anything back
-        acceptor.setAcceptors(this.peers);
         return null;
     }
 
@@ -99,6 +106,7 @@ public class MessageThread implements Runnable
     {
         ByzAcceptor acceptor = new ByzAcceptor();
         acceptor.setServerThread(this.serverThread);
+        acceptor.setWaitForSafe(this.phase1cCondition);
         acceptor.setAcceptors(this.peers);
         return acceptor.receiveAcceptRequest(tokens);
     }
@@ -107,9 +115,9 @@ public class MessageThread implements Runnable
     {
         ByzAcceptor acceptor = new ByzAcceptor();
         acceptor.setServerThread(this.serverThread);
-        acceptor.setLock(lock);
         acceptor.setPhase2Condition(phase2Condition);
         acceptor.setAcceptors(this.peers);
+        acceptor.setWaitForSafe(this.phase1cCondition);
         return acceptor.receiveAcceptResponse(sender);
     }
 
@@ -117,9 +125,12 @@ public class MessageThread implements Runnable
     {
         ByzAcceptor acceptor = new ByzAcceptor();
         acceptor.setServerThread(this.serverThread);
-        acceptor.setLock(lock);
         acceptor.setPhase2Condition(phase2Condition);
-        acceptor.setAcceptors(this.peers);
+        List<Server> acceptors = new ArrayList<>(this.peers);
+        // Remove the sender from the list of acceptors to broadcast to
+        acceptors.remove(sender);
+        acceptor.setAcceptors(acceptors);
+        acceptor.setWaitForSafe(this.phase1cCondition);
         return acceptor.receiveSafeRequest(tokens);
     }
 
@@ -128,9 +139,9 @@ public class MessageThread implements Runnable
 
         ByzAcceptor acceptor = new ByzAcceptor();
         acceptor.setServerThread(this.serverThread);
-        acceptor.setLock(lock);
         acceptor.setPhase2Condition(phase2Condition);
         acceptor.setAcceptors(this.peers);
+        acceptor.setWaitForSafe(this.phase1cCondition);
         return acceptor.receiveSafeBroadcast(tokens);
 
     }
@@ -139,9 +150,9 @@ public class MessageThread implements Runnable
     {
         ByzAcceptor acceptor = new ByzAcceptor();
         acceptor.setServerThread(this.serverThread);
-        acceptor.setLock(lock);
         acceptor.setPhase2Condition(phase2Condition);
         acceptor.setAcceptors(this.peers);
+        acceptor.setWaitForSafe(this.phase1cCondition);
         return acceptor.receivePrepareBroadcast(tokens);
 
     }

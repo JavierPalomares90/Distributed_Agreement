@@ -15,6 +15,22 @@ public class Utils
 {
     private static Logger logger = Logger.getLogger(Utils.class);
 
+    public static Server getSender(String ipAddr, Integer port, List<Server> peers)
+    {
+        logger.debug(ipAddr + " " + port + " " + peers.toString());
+        for (Server server:peers)
+        {
+            if(ipAddr.equals(server.getIpAddress()))
+            {
+                if(port.equals(server.getPort()))
+                {
+                    return server;
+                }
+            }
+        }
+        return null;
+    }
+
     public static String sendTcpMessage(Server acceptor,String command, boolean waitForResponse)
     {
         Socket tcpSocket = null;

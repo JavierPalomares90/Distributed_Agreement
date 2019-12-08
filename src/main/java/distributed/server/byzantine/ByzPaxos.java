@@ -37,7 +37,7 @@ public class ByzPaxos extends Paxos
         // Wait till we get enough promises to move onto phase 2
         try
         {
-            lock.lock();
+            this.serverThread.getThreadLock().lock();
             while(this.serverThread.getWeightedPromises().get() < 2.0/3)
             {
                 logger.debug("Waiting for enough promises before moving onto phase 2");
@@ -49,7 +49,7 @@ public class ByzPaxos extends Paxos
             logger.error("Unable to await for promises",e);
         }finally
         {
-            lock.unlock();
+            this.serverThread.getThreadLock().unlock();
         }
 
         if(this.serverThread.getWeightPromisesRejected().get() > 1.0/3)
@@ -67,7 +67,7 @@ public class ByzPaxos extends Paxos
         logger.debug("Waiting for value agreement");
         try
         {
-            lock.lock();
+            this.serverThread.getThreadLock().lock();
             while(this.serverThread.getWeightedAccepts().get() < 2.0/3)
             {
                 logger.debug("Waiting for enough accepts before agreeing to value");
@@ -80,7 +80,7 @@ public class ByzPaxos extends Paxos
             logger.error("Unable to await for accepts",e);
         }finally
         {
-            lock.unlock();
+            this.serverThread.getThreadLock().unlock();
 
         }
         if(this.serverThread.getWeightAcceptsRejected().get() > 1.0/3)

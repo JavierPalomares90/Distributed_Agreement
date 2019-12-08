@@ -13,6 +13,7 @@ import org.apache.log4j.Logger;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Condition;
 
 /**
  * Byzantine acceptor
@@ -21,6 +22,9 @@ public class ByzAcceptor extends Acceptor
 {
     @Setter(AccessLevel.PUBLIC)
     protected List<Server> acceptors;
+
+    @Setter(AccessLevel.PUBLIC)
+    private Condition waitForSafe;
 
     private static Logger logger = Logger.getLogger(ByzAcceptor.class);
 
@@ -44,12 +48,20 @@ public class ByzAcceptor extends Acceptor
         // Broadcast the safe to the rest of the acceptors
         Runnable broadcastSafeRunnable = () ->
         {
-            logger.debug("Broadcasting safe request to other acceptors");
+            logger.debug("Broadcasting safe request to other acceptors. Getting lock for ");
             boolean isValueSafe = broadcastSafeRequest(id,value,this.acceptors);
             logger.debug(("Is value safe?: " + isValueSafe));
 
             // Mark the value as safe or not depending
             this.serverThread.addSafeValue(safeValue,isValueSafe);
+            // Inform others the safe broadcast is done
+            this.serverThread.getSafeBroadcastDone().set(true);
+            this.serverThread.getThreadLock().lock();
+            synchronized (waitForSafe)
+            {
+                waitForSafe.notifyAll();
+            }
+            this.serverThread.getThreadLock().unlock();
         };
         new Thread(broadcastSafeRunnable).start();
         return null;
@@ -79,6 +91,26 @@ public class ByzAcceptor extends Acceptor
         int id = Integer.parseInt(tokens[1]);
         String value = tokens[2];
         logger.debug("Received accept request with id: " + id + " value: " + value);
+        // Wait until the safe broadcast has finished before starting here
+        try
+        {
+            this.serverThread.getThreadLock().lock();
+            logger.debug("Waiting for safe broadcast to finish before proceeding");
+            while(this.serverThread.getSafeBroadcastDone().get() == false)
+            {
+                waitForSafe.await();
+            }
+        } catch (InterruptedException e) {
+            logger.error("Unable to wait for safe broadcast to finish",e);
+        }finally
+        {
+            this.serverThread.getSafeBroadcastDone().set(false);
+
+            this.serverThread.getThreadLock().unlock();
+        }
+
+        logger.debug("Proceeding");
+
         SafeValue safeValue = new SafeValue();
         safeValue.setId(id);
         safeValue.setValue(value);
@@ -107,11 +139,11 @@ public class ByzAcceptor extends Acceptor
         this.serverThread.getWeightedAccepts().set(this.serverThread.getWeightedAccepts().get() + sender.getWeight());
         if(this.serverThread.getWeightedAccepts().get() > 5.0/6)
         {
-            lock.lock();
+            this.serverThread.getThreadLock().lock();
             logger.debug("We've received enough accepts. can agree on a value");
             // We've received enough accepts. can agree on a value
             this.phase2Condition.signalAll();
-            lock.unlock();
+            this.serverThread.getThreadLock().unlock();
         }
         return "Agreed to value";
     }
@@ -137,12 +169,13 @@ public class ByzAcceptor extends Acceptor
         {
             String valuePreviouslyPromised = updateValues(id,value);
 
-            logger.debug("Promising to request with id " + id + " value " + value);
 
+            logger.debug("Broadcasting prepare request");
             // Broadcast the prepare request to the other acceptors
             boolean broadcastSuccessful = broadcastPrepareRequest(id,value,this.acceptors);
             if(broadcastSuccessful == false)
             {
+                logger.debug("Rejecting prepare request");
                 return Command.REJECT_PREPARE.getCommand() + " " + this.serverThread.getPaxosId().get() + " " + this.serverThread.getPaxosValue() + "\n";
             }
             else
@@ -180,7 +213,7 @@ public class ByzAcceptor extends Acceptor
 
     private static synchronized boolean broadcastCommand(String cmd, List<Server> acceptors, int numFaulty)
     {
-        logger.debug("Broadcasting command " + cmd);
+        logger.debug("Broadcasting command " + cmd + " + to " + acceptors.toString());
         int numAccepts = 0;
         int numRejects = 0;
         int numServers = acceptors.size();
