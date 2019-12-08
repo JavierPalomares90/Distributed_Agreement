@@ -98,7 +98,7 @@ public class ByzAcceptor extends Acceptor
     public synchronized String receiveAcceptResponse(Server sender)
     {
         this.serverThread.getWeightedAccepts().set(this.serverThread.getWeightedAccepts().get() + sender.getWeight());
-        if(this.serverThread.getWeightedAccepts().get() > 2.0/3)
+        if(this.serverThread.getWeightedAccepts().get() > 5.0/6)
         {
             lock.lock();
             // We've received enough accepts. can agree on a value
