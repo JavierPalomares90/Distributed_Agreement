@@ -71,7 +71,9 @@ public class Proposer
             }
         }
     }
-
+    
+    // TODO: Verify ID and value update; still not 100% sure this is correct. A value will be chosen but I don't think it
+    // will always be the correct value
     protected void updateId(String[] tokens)
     {
         // Update the id
