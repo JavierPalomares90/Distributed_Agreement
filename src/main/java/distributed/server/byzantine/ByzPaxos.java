@@ -56,6 +56,7 @@ public class ByzPaxos extends Paxos
         {
             return "Proposal failed";
         }
+        logger.debug("Sending safe request");
 
         // Let the acceptors know the values are safe
         proposer.safe(servers);

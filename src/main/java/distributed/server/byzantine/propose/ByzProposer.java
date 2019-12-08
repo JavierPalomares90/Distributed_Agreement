@@ -82,7 +82,6 @@ public class ByzProposer extends Proposer
         {
             if (Command.PROMISE.getCommand().equals(tokens[0]))
             {
-
                 // Update the id
                 updateIdAndValue(tokens);
                 // the prepare request was accepted

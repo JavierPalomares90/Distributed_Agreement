@@ -69,7 +69,6 @@ public class Acceptor
     {
         // Update the new paxosId and accept the request
         this.serverThread.getPaxosId().set(id);
-        this.serverThread.setPaxosValue(value);
 
         // Respond with the previously promised value. If it's null, then send the value from this prepare
         this.serverThread.getPaxosId().set(id);

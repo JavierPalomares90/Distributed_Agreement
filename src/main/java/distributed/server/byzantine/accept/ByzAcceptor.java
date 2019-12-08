@@ -37,6 +37,7 @@ public class ByzAcceptor extends Acceptor
         safeValue.setId(id);
         safeValue.setValue(value);
         // Add the value, mark it as not safe for not
+        logger.debug("Adding value to map with isSafe=false");
         this.serverThread.addSafeValue(safeValue,false);
 
 
@@ -45,8 +46,9 @@ public class ByzAcceptor extends Acceptor
         {
             logger.debug("Broadcasting safe request to other acceptors");
             boolean isValueSafe = broadcastSafeRequest(id,value,this.acceptors);
+            logger.debug(("Is value safe?: " + isValueSafe));
 
-            // Mark the value as safe
+            // Mark the value as safe or not depending
             this.serverThread.addSafeValue(safeValue,isValueSafe);
         };
         new Thread(broadcastSafeRunnable).start();
@@ -76,16 +78,20 @@ public class ByzAcceptor extends Acceptor
     {
         int id = Integer.parseInt(tokens[1]);
         String value = tokens[2];
+        logger.debug("Received accept request with id: " + id + " value: " + value);
         SafeValue safeValue = new SafeValue();
         safeValue.setId(id);
         safeValue.setValue(value);
         // check that the value is safe
+        logger.debug("Checking that the value is safe");
         AtomicBoolean isValueSafe = this.serverThread.isValueSafe(safeValue);
         if (isValueSafe == null || isValueSafe.get() == false)
         {
+            logger.debug("Value is not safe");
             // Value is not safe. reject the request
             return Command.REJECT_ACCEPT.getCommand() + " " + id + " " + value;
         }
+        logger.debug("Value is safe. Continuing with the paxos impl");
         // Value is safe, follow the paxos algo for receiving accept request
         return super.receiveAcceptRequest(tokens);
     }
@@ -97,10 +103,12 @@ public class ByzAcceptor extends Acceptor
      */
     public synchronized String receiveAcceptResponse(Server sender)
     {
+        logger.debug("Received accept reponser from server " + sender );
         this.serverThread.getWeightedAccepts().set(this.serverThread.getWeightedAccepts().get() + sender.getWeight());
         if(this.serverThread.getWeightedAccepts().get() > 5.0/6)
         {
             lock.lock();
+            logger.debug("We've received enough accepts. can agree on a value");
             // We've received enough accepts. can agree on a value
             this.phase2Condition.signalAll();
             lock.unlock();
@@ -119,6 +127,11 @@ public class ByzAcceptor extends Acceptor
         int id = Integer.parseInt(tokens[1]);
         String value = tokens[2];
         logger.debug("Receiving prepare request with id " + id + " value " + value);
+        ProposedValue proposedValue = new ProposedValue();
+        proposedValue.setId(id);
+        proposedValue.setValue(value);
+        this.serverThread.addProposedValue(proposedValue);
+
         // Compare the id to our current id
         if(id > this.serverThread.getPaxosId().get())
         {
@@ -127,18 +140,16 @@ public class ByzAcceptor extends Acceptor
             logger.debug("Promising to request with id " + id + " value " + value);
 
             // Broadcast the prepare request to the other acceptors
-            Runnable broadcastPrepareRunnable = () ->
+            boolean broadcastSuccessful = broadcastPrepareRequest(id,value,this.acceptors);
+            if(broadcastSuccessful == false)
             {
-                boolean broadcastSuccessful = broadcastPrepareRequest(id,value,this.acceptors);
-                /**
-                 * TODO: reject if the broadcast did not reach a quorum
-                 */
+                return Command.REJECT_PREPARE.getCommand() + " " + this.serverThread.getPaxosId().get() + " " + this.serverThread.getPaxosValue() + "\n";
+            }
+            else
+            {
+                return Command.PROMISE.getCommand() + " " + this.serverThread.getPaxosId().get() + " " + valuePreviouslyPromised + "\n";
+            }
 
-            };
-            new Thread(broadcastPrepareRunnable).start();
-
-
-            return Command.PROMISE.getCommand() + " " + this.serverThread.getPaxosId().get() + " " + valuePreviouslyPromised + "\n";
         }
         logger.debug("Rejecting prepare request with id " + id + " value " + value);
         // REJECT the request and send the paxos id and value
@@ -169,27 +180,33 @@ public class ByzAcceptor extends Acceptor
 
     private static synchronized boolean broadcastCommand(String cmd, List<Server> acceptors, int numFaulty)
     {
+        logger.debug("Broadcasting command " + cmd);
         int numAccepts = 0;
         int numRejects = 0;
         int numServers = acceptors.size();
         int quorumSize = Utils.getQuorumSize(numServers,numFaulty);
+        logger.debug("Quorum size: " + quorumSize);
         for(Server acceptor: acceptors)
         {
             String response = Utils.sendTcpMessage(acceptor,cmd, true);
             if(Command.SAFE_BROADCAST_ACCEPT.getCommand().equals(response) || Command.PREPARE_BROADCAST_ACCEPT.getCommand().equals(response))
             {
+                logger.debug("Received accept");
                 numAccepts++;
             }
             else
             {
+                logger.debug("Received reject");
                 numRejects++;
             }
             if(numAccepts >= quorumSize)
             {
+                logger.debug("Accepts reached quorum. Accepting");
                 return true;
             }
             if(numRejects > (numServers - quorumSize))
             {
+                logger.debug("Too many rejects. Quorum not possible. Bailing");
                 return false;
             }
         }
@@ -200,6 +217,7 @@ public class ByzAcceptor extends Acceptor
     {
         int id = Integer.parseInt(tokens[1]);
         String value = tokens[2];
+        logger.debug("Received safe broadcast with id: "  + id + " value " + value);
 
         SafeValue safeValue = new SafeValue();
         safeValue.setId(id);
@@ -208,10 +226,12 @@ public class ByzAcceptor extends Acceptor
         // Check that we've receive this request previously
         if(this.serverThread.isValueSafe(safeValue) == null)
         {
+            logger.debug("We have not received this safe value. Rejecting");
             // The safe request that was broadcast doesn't match what we've received
             return Command.SAFE_BROADCAST_REJECT.getCommand();
         }
 
+        logger.debug("Accepting safe broadcast");
         return Command.SAFE_BROADCAST_ACCEPT.getCommand();
     }
 
@@ -219,16 +239,19 @@ public class ByzAcceptor extends Acceptor
     {
         int id = Integer.parseInt(tokens[1]);
         String value = tokens[2];
+        logger.debug("Received prepare broadcast with id: "  + id + " value " + value);
         ProposedValue proposedValue = new ProposedValue();
         proposedValue.setId(id);
         proposedValue.setValue(value);
         // Check the id of the broadcast matches what we received
         if(this.serverThread.isValueProposed(proposedValue) == null)
         {
+            logger.debug("We have not received this proposed value. Rejecting");
             // The safe request that was broadcast doesn't match what we've received
             return Command.PREPARE_BROADCAST_REJECT.getCommand();
         }
 
+        logger.debug("Accepting prepare broadcast");
         return Command.PREPARE_BROADCAST_ACCEPT.getCommand();
     }
 }

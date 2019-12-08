@@ -112,6 +112,7 @@ public class Proposer
      */
     protected void sendRequest(Request request, List<Server> acceptors, boolean waitForResponse)
     {
+        logger.debug("Sending request " + request + " waitForResponse: " + waitForResponse);
         for (Server acceptor : acceptors)
         {
             sendRequestToAcceptor(request, acceptor ,waitForResponse);
@@ -137,12 +138,13 @@ public class Proposer
     }
 
     /**
-     * Broadcast the accept request to the servers
+     * Send the accept request to the servers
      * @param acceptRequest
      * @param acceptors
      */
     protected void sendAcceptRequest(AcceptRequest acceptRequest, List<Server> acceptors)
     {
+        logger.debug("Sending accpet request");
         sendRequest(acceptRequest, acceptors);
         // Increment the number of accepts for ourself
         this.serverThread.incrementNumAccepts();
