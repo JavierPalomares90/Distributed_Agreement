@@ -8,7 +8,7 @@ public class SafeRequest extends Request
     @Override
     public String toString()
     {
-        return Command.SAFE_REQUEST + " " + this.getId() + " " + this.getValue() + "\n";
+        return Command.SAFE_REQUEST + " " + this.getId() + " " + this.getValue() + " " + this.getSenderID() + "\n";
     }
 
 }
