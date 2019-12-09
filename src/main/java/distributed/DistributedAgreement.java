@@ -50,7 +50,7 @@ public class DistributedAgreement
         Server host = getSelf(serverId,peers);
 
         // Spawn off a thread to handle messages from client
-        ServerThread serverThread = new ServerThread(host.getWeight());
+        ServerThread serverThread = new ServerThread(host.getWeight(), host.getServerId());
         serverThread.setIpAddress(host.getIpAddress());
         // Remove self from the list of hosts
         peers.remove(host);
