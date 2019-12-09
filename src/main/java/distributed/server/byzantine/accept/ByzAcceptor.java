@@ -30,13 +30,14 @@ public class ByzAcceptor extends Acceptor
 
     public String receiveSafeRequest(String[] tokens)
     {
-        if (tokens.length < 2)
+        if (tokens.length < 3)
         {
             return null;
         }
         int id = Integer.parseInt(tokens[1]);
         String value = tokens[2];
-        logger.debug("Received safe request with id: " + id + " value: " + value);
+        int senderID = Integer.parseInt(tokens[3]);
+        logger.debug("Received safe request with id: " + id + " value: " + value + " from serverID " + senderID);
         SafeValue safeValue = new SafeValue();
         safeValue.setId(id);
         safeValue.setValue(value);
@@ -49,7 +50,7 @@ public class ByzAcceptor extends Acceptor
         Runnable broadcastSafeRunnable = () ->
         {
             logger.debug("Broadcasting safe request to other acceptors. Getting lock for ");
-            boolean isValueSafe = broadcastSafeRequest(id,value,this.acceptors);
+            boolean isValueSafe = broadcastSafeRequest(id,value,this.acceptors, senderID);
             logger.debug(("Is value safe?: " + isValueSafe));
 
             // Mark the value as safe or not depending
@@ -90,7 +91,7 @@ public class ByzAcceptor extends Acceptor
     {
         int id = Integer.parseInt(tokens[1]);
         String value = tokens[2];
-        logger.debug("Received accept request with id: " + id + " value: " + value);
+        logger.debug("Received accept request with id: " + id + " value: " + value + " from serverID " + tokens[3]);
         // Wait until the safe broadcast has finished before starting here
         try
         {
@@ -158,6 +159,7 @@ public class ByzAcceptor extends Acceptor
         }
         int id = Integer.parseInt(tokens[1]);
         String value = tokens[2];
+        int senderID = Integer.parseInt(tokens[3]);
         logger.debug("Receiving prepare request with id " + id + " value " + value);
         ProposedValue proposedValue = new ProposedValue();
         proposedValue.setId(id);
@@ -172,7 +174,7 @@ public class ByzAcceptor extends Acceptor
 
             logger.debug("Broadcasting prepare request");
             // Broadcast the prepare request to the other acceptors
-            boolean broadcastSuccessful = broadcastPrepareRequest(id,value,this.acceptors);
+            boolean broadcastSuccessful = broadcastPrepareRequest(id,value,this.acceptors, senderID);
             if(broadcastSuccessful == false)
             {
                 logger.debug("Rejecting prepare request");
@@ -190,47 +192,46 @@ public class ByzAcceptor extends Acceptor
 
     }
 
-    private boolean broadcastPrepareRequest(int id, String value, List<Server> acceptors)
+    private boolean broadcastPrepareRequest(int id, String value, List<Server> acceptors, int senderID)
     {
         // Broadcast the request we received from a proposer to all peers
         String cmd = Command.PREPARE_BROADCAST.getCommand() + " " + id + " " + value;
-        return broadcastCommand(cmd,acceptors);
+        return broadcastCommand(cmd,acceptors,senderID);
     }
 
-    private boolean broadcastSafeRequest(int id, String value, List<Server> acceptors)
+    private boolean broadcastSafeRequest(int id, String value, List<Server> acceptors, int senderID)
     {
         // Broadcast the request we received from a proposer to all peers
         String cmd = Command.SAFE_BROADCAST.getCommand() + " " + id + " " + value;
-        return broadcastCommand(cmd,acceptors);
+        return broadcastCommand(cmd,acceptors, senderID);
     }
 
-    private static synchronized boolean broadcastCommand(String cmd, List<Server> acceptors)
+    private static synchronized boolean broadcastCommand(String cmd, List<Server> acceptors, int senderID)
     {
-        return broadcastCommand(cmd,acceptors,0);
+        return broadcastCommand(cmd,acceptors,senderID,0);
 
     }
 
 
-    private static synchronized boolean broadcastCommand(String cmd, List<Server> acceptors, int numFaulty)
+    private static synchronized boolean broadcastCommand(String cmd, List<Server> acceptors, int senderID, int numFaulty)
     {
         logger.debug("Broadcasting command " + cmd + " + to " + acceptors.toString());
-        int numAccepts = 0;
+        int numAccepts = 1;
         int numRejects = 0;
         int numServers = acceptors.size();
         int quorumSize = Utils.getQuorumSize(numServers,numFaulty);
         logger.debug("Quorum size: " + quorumSize);
         for(Server acceptor: acceptors)
         {
-            String response = Utils.sendTcpMessage(acceptor,cmd, true);
-            if(Command.SAFE_BROADCAST_ACCEPT.getCommand().equals(response) || Command.PREPARE_BROADCAST_ACCEPT.getCommand().equals(response))
-            {
-                logger.debug("Received accept");
-                numAccepts++;
-            }
-            else
-            {
-                logger.debug("Received reject");
-                numRejects++;
+            if(!acceptor.getServerId().equals(senderID)) {
+                String response = Utils.sendTcpMessage(acceptor, cmd, true);
+                if (Command.SAFE_BROADCAST_ACCEPT.getCommand().equals(response) || Command.PREPARE_BROADCAST_ACCEPT.getCommand().equals(response)) {
+                    logger.debug("Received accept");
+                    numAccepts++;
+                } else {
+                    logger.debug("Received reject");
+                    numRejects++;
+                }
             }
             if(numAccepts >= quorumSize)
             {
