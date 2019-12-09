@@ -51,8 +51,11 @@ public class ServerThread implements Runnable
     private AtomicFloat weightPromisesRejected;
     @Getter @Setter(AccessLevel.PRIVATE)
     private AtomicFloat weightAcceptsRejected;
-    @Getter @Setter(AccessLevel.PRIVATE)
+
+    @Getter @Setter(AccessLevel.PUBLIC)
     private AtomicFloat ownWeight;
+    @Getter @Setter(AccessLevel.PUBLIC)
+    private AtomicInteger hostID;
 
     // The Paxos Id
     @Getter @Setter(AccessLevel.PUBLIC)
