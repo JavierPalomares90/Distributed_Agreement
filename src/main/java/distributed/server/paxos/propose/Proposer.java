@@ -28,6 +28,7 @@ public class Proposer
     {
         logger.debug("Sending request " + request.toString() + " to acceptor" + acceptor);
         String command = request.toString();
+        command += " " + this.serverThread.getHostID().get();
         // Send the command over TCP
         String response = Utils.sendTcpMessage(acceptor, command, waitForResponse);
         parseResponseFromAcceptor(response);
