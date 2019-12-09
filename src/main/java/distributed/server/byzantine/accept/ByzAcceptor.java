@@ -91,7 +91,7 @@ public class ByzAcceptor extends Acceptor
     {
         int id = Integer.parseInt(tokens[1]);
         String value = tokens[2];
-        logger.debug("Received accept request with id: " + id + " value: " + value + " from serverID " + tokens[3]);
+        logger.debug("Received accept request with id: " + id + " value: " + value);
         // Wait until the safe broadcast has finished before starting here
         try
         {
