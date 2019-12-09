@@ -52,9 +52,9 @@ public class ServerThread implements Runnable
     @Getter @Setter(AccessLevel.PRIVATE)
     private AtomicFloat weightAcceptsRejected;
 
-    @Getter @Setter(AccessLevel.PUBLIC)
+    @Getter @Setter(AccessLevel.PRIVATE)
     private AtomicFloat ownWeight;
-    @Getter @Setter(AccessLevel.PUBLIC)
+    @Getter @Setter(AccessLevel.PRIVATE)
     private AtomicInteger hostID;
 
     // The Paxos Id
@@ -96,9 +96,10 @@ public class ServerThread implements Runnable
     }
 
 
-    public ServerThread(Float weight)
+    public ServerThread(Float weight, int id)
     {
         this.ownWeight = new AtomicFloat(weight);
+        this.hostID = new AtomicInteger(id);
         
         paxosId = new AtomicInteger(0);
         threadLock = new ReentrantLock();
