@@ -197,22 +197,22 @@ public class MessageThread implements Runnable
         else if(Command.ACCEPT.getCommand().equals(sender))
         {
             // A peer sent a response to our accept request
-            receiveAcceptResponse(sender);
+            return receiveAcceptResponse(sender);
 
         }
         else if(Command.SAFE_REQUEST.getCommand().equals(tokens[0])) {
             // A proposer sent us a safe request
-            receiveSafeRequest(tokens);
+            return receiveSafeRequest(tokens);
 
         }else if(Command.SAFE_BROADCAST.getCommand().equals(tokens[0]))
         {
             // An acceptor is broadcasting the safe request it received
-            receiveSafeBroadcast(tokens);
+            return receiveSafeBroadcast(tokens);
         }
         else if(Command.PREPARE_BROADCAST.getCommand().equals(tokens[0]))
         {
             // An acceptor is broadcasting the prepare request it received
-            receivePrepareBroadcast(tokens);
+            return receivePrepareBroadcast(tokens);
         }
         return "Unable to process msg " + msg;
     }

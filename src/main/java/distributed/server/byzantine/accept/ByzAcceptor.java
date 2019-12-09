@@ -49,7 +49,7 @@ public class ByzAcceptor extends Acceptor
         // Broadcast the safe to the rest of the acceptors
         Runnable broadcastSafeRunnable = () ->
         {
-            logger.debug("Broadcasting safe request to other acceptors. Getting lock for ");
+            logger.debug("Broadcasting safe request to other acceptors.");
             boolean isValueSafe = broadcastSafeRequest(id,value,this.acceptors, senderID);
             logger.debug(("Is value safe?: " + isValueSafe));
 
@@ -57,10 +57,12 @@ public class ByzAcceptor extends Acceptor
             this.serverThread.addSafeValue(safeValue,isValueSafe);
             // Inform others the safe broadcast is done
             this.serverThread.getSafeBroadcastDone().set(true);
+            logger.debug(("Getting lock"));
             this.serverThread.getThreadLock().lock();
             synchronized (waitForSafe)
             {
-                waitForSafe.notifyAll();
+                logger.debug("Notifiying everyone that wait for safe is done");
+                waitForSafe.signalAll();
             }
             this.serverThread.getThreadLock().unlock();
         };
@@ -96,9 +98,9 @@ public class ByzAcceptor extends Acceptor
         try
         {
             this.serverThread.getThreadLock().lock();
-            logger.debug("Waiting for safe broadcast to finish before proceeding");
             while(this.serverThread.getSafeBroadcastDone().get() == false)
             {
+                logger.debug("Waiting for safe broadcast to finish before proceeding");
                 waitForSafe.await();
             }
         } catch (InterruptedException e) {
@@ -215,7 +217,7 @@ public class ByzAcceptor extends Acceptor
 
     private static synchronized boolean broadcastCommand(String cmd, List<Server> acceptors, int senderID, int numFaulty)
     {
-        logger.debug("Broadcasting command " + cmd + " + to " + acceptors.toString());
+        logger.debug("Broadcasting command " + cmd + "  to " + acceptors.toString());
         int numAccepts = 1;
         int numRejects = 0;
         int numServers = acceptors.size();
