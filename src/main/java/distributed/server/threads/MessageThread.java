@@ -62,19 +62,15 @@ public class MessageThread implements Runnable
         paxos.setPhase2Condition(this.phase2Condition);
         paxos.setServerThread(this.serverThread);
 
-        Thread paxosThread = new Thread(paxos);
         // Before starting, check if there is already a paxos proposal running
         // If so, stop it and reset for the new proposal
 
-        if(this.serverThread.getPaxosThread() != null)
+        if(this.serverThread.getPaxos() != null)
         {
-            this.serverThread.getPaxosThread().interrupt();
             this.serverThread.init();
         }
-        this.serverThread.setPaxosThread(paxosThread);
-        paxosThread.start();
-
-        return "Value " + value + " is being proposed";
+        this.serverThread.setPaxos(paxos);
+        return paxos.proposeValue();
     }
 
 
@@ -168,7 +164,6 @@ public class MessageThread implements Runnable
             {
                 String value = tokens[1];
                 return proposeValue(value);
-
             }
         }else if(Command.PREPARE_REQUEST.getCommand().equals(tokens[0]))
         {

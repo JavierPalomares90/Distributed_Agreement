@@ -14,7 +14,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
 @Data
-public class Paxos implements Runnable
+public class Paxos
 {
     private static Logger logger = Logger.getLogger(Paxos.class);
 
@@ -105,11 +105,5 @@ public class Paxos implements Runnable
         logger.debug("Agreed to value");
         // The value is agreed to
         return Command.AGREE.getCommand() + " " + value;
-    }
-
-    @Override
-    public void run()
-    {
-        proposeValue();
     }
 }

@@ -69,7 +69,7 @@ public class ServerThread implements Runnable
     private Map<ProposedValue,AtomicBoolean> proposedValues;
 
     @Getter @Setter(AccessLevel.PUBLIC)
-    private Thread paxosThread;
+    private Paxos paxos;
 
     @Getter (AccessLevel.PUBLIC)
     private final Lock threadLock;

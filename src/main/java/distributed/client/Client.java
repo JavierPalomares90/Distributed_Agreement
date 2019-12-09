@@ -73,7 +73,7 @@ public class Client
         // Write the purchase message
         outputWriter.write(cmd + "\n");
         outputWriter.flush();
-        logger.debug("Wrote message to server. Waiting for response");
+        System.out.print("Wrote message to server. Waiting for response...");
         // Wait for the response from the server
         String response = "";
 
@@ -82,6 +82,7 @@ public class Client
             try
             {
                 response = inputReader.readLine();
+                System.out.print("...");
             } catch (IOException e)
             {
                 logger.error("Unable to read line", e);
