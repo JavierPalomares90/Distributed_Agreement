@@ -177,6 +177,7 @@ public class Proposer
         PrepareRequest prepareRequest = new PrepareRequest();
         prepareRequest.setId(id);
         prepareRequest.setValue(value);
+        prepareRequest.setSenderID(this.serverThread.getHostID().get());
         logger.debug("Sending prepare request to acceptors");
         sendPrepareRequest(prepareRequest,acceptors);
         return true;
