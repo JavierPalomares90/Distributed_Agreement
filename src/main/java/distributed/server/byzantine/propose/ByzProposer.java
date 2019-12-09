@@ -55,6 +55,7 @@ public class ByzProposer extends Proposer
         SafeRequest safeRequest = new SafeRequest();
         safeRequest.setId(id);
         safeRequest.setValue(value);
+        safeRequest.setSenderID(this.serverThread.getServerId());
         sendSafeRequest(safeRequest,acceptors);
         return true;
     }
