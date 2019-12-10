@@ -203,7 +203,7 @@ public class ByzAcceptor extends Acceptor
     private boolean broadcastPrepareRequest(int id, String value, List<Server> acceptors, int senderID)
     {
         // Broadcast the request we received from a proposer to all peers
-        String cmd = Command.PREPARE_BROADCAST.getCommand() + " " + id + " " + value;
+        String cmd = Command.PREPARE_BROADCAST.getCommand() + " " + id + " " + value + "\n";
         try
         {
             return broadcastCommand(cmd,acceptors,senderID);
@@ -217,7 +217,7 @@ public class ByzAcceptor extends Acceptor
     private boolean broadcastSafeRequest(int id, String value, List<Server> acceptors, int senderID)
     {
         // Broadcast the request we received from a proposer to all peers
-        String cmd = Command.SAFE_BROADCAST.getCommand() + " " + id + " " + value;
+        String cmd = Command.SAFE_BROADCAST.getCommand() + " " + id + " " + value + "\n";
         try
         {
             return broadcastCommand(cmd, acceptors, senderID);
