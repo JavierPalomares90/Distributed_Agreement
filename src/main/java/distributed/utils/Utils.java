@@ -35,6 +35,34 @@ public class Utils
         return null;
     }
 
+
+
+    // Return the messages' rejection
+    private static String rejectMessage(String cmd)
+    {
+        if(cmd != null)
+        {
+            String[] tokens = cmd.split("\\s+");
+            if(Command.PREPARE_BROADCAST.getCommand().equals(tokens[0]))
+            {
+                return Command.PREPARE_BROADCAST_REJECT.getCommand();
+            }
+            else if(Command.SAFE_BROADCAST.getCommand().equals(tokens[0]))
+            {
+                return Command.SAFE_BROADCAST_REJECT.getCommand();
+            }
+            else if(Command.ACCEPT_REQUEST.getCommand().equals(tokens[0]))
+            {
+                return Command.REJECT_ACCEPT.getCommand();
+            }else if(Command.PREPARE_REQUEST.getCommand().equals(tokens[0]))
+            {
+                return Command.REJECT_PREPARE.getCommand();
+            }
+        }
+        return null;
+
+    }
+
     public static String sendTcpMessage(Server acceptor,String command, boolean waitForResponse)
     {
         Socket tcpSocket = null;
@@ -63,7 +91,7 @@ public class Utils
         {
             logger.error("Unable to send msg to " + acceptor.toString(),e);
             logger.debug("Assuming acceptor rejected");
-            response = null;
+            response = rejectMessage(command);
         }finally
         {
             if (tcpSocket != null)
