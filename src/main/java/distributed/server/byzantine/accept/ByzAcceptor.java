@@ -245,7 +245,7 @@ public class ByzAcceptor extends Acceptor
         logger.debug("Broadcasting command " + cmd + "  to " + acceptors.toString());
         int numAccepts = 1;
         int numRejects = 0;
-        int numServers = acceptors.size();
+        int numServers = acceptors.size() + 1; // Add one because acceptors doesn't include self
         int quorumSize = Utils.getQuorumSize(numServers,numFaulty);
         logger.debug("Quorum size: " + quorumSize);
         for(Server acceptor: acceptors)
