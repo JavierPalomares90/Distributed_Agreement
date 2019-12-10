@@ -40,35 +40,43 @@ public class Proposer
      */
     private void parseResponseFromAcceptor(String response)
     {
+        /**
+         * TODO: If the request timed out, the input to this message is null, so neither accepts or rejects will update.
+         * Does this cause issues?
+         */
         logger.debug("Response from acceptor " + response);
-        String[] tokens = response.split("\\s+");
-        if(tokens.length > 1)
+        if(response != null)
         {
-            if (Command.PROMISE.getCommand().equals(tokens[0]))
+            String[] tokens = response.split("\\s+");
+            if(tokens.length > 1)
             {
+                if (Command.PROMISE.getCommand().equals(tokens[0]))
+                {
 
-                // Update the id
-                updateIdAndValue(tokens);
-                // the prepare request was accepted
-                this.serverThread.incrementNumPromises();
+                    // Update the id
+                    updateIdAndValue(tokens);
+                    // the prepare request was accepted
+                    this.serverThread.incrementNumPromises();
 
-            }else if (Command.ACCEPT.getCommand().equals(tokens[0]))
-            {
-                // the accept reqeust was accepted
-                updateId(tokens);
-                this.serverThread.incrementNumAccepts();
-            }else if(Command.REJECT_PREPARE.getCommand().equals(tokens[0]))
-            {
-                // the prepare request was rejected
-                updateIdAndValue(tokens);
-                this.serverThread.incrementNumPromisesRejected();
+                }else if (Command.ACCEPT.getCommand().equals(tokens[0]))
+                {
+                    // the accept reqeust was accepted
+                    updateId(tokens);
+                    this.serverThread.incrementNumAccepts();
+                }else if(Command.REJECT_PREPARE.getCommand().equals(tokens[0]))
+                {
+                    // the prepare request was rejected
+                    updateIdAndValue(tokens);
+                    this.serverThread.incrementNumPromisesRejected();
 
-            }else if(Command.REJECT_ACCEPT.getCommand().equals(tokens[0]))
-            {
-                // The accept request was rejected
-                updateId(tokens);
-                this.serverThread.incrementNumAcceptsRejected();
+                }else if(Command.REJECT_ACCEPT.getCommand().equals(tokens[0]))
+                {
+                    // The accept request was rejected
+                    updateId(tokens);
+                    this.serverThread.incrementNumAcceptsRejected();
+                }
             }
+
         }
     }
     

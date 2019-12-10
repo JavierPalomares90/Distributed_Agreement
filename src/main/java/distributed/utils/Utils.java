@@ -7,12 +7,16 @@ import org.yaml.snakeyaml.constructor.Constructor;
 
 import java.io.*;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Utils
 {
+    // Set the timeout when sending tcp messages
+    private static int TIMEOUT_MILLIS = 1000;
+
     private static Logger logger = Logger.getLogger(Utils.class);
 
     public static Server getSender(String ipAddr, Integer port, List<Server> peers)
@@ -39,6 +43,7 @@ public class Utils
         {
             // Get the socket
             tcpSocket = new Socket(acceptor.getIpAddress(), acceptor.getPort());
+            tcpSocket.setSoTimeout(TIMEOUT_MILLIS);
             PrintWriter outputWriter = new PrintWriter(tcpSocket.getOutputStream(), true);
             BufferedReader inputReader = new BufferedReader(new InputStreamReader(tcpSocket.getInputStream()));
             // Write the message
@@ -57,7 +62,9 @@ public class Utils
         } catch (Exception e)
         {
             logger.error("Unable to send msg to " + acceptor.toString(),e);
-        } finally
+            logger.debug("Assuming acceptor rejected");
+            response = null;
+        }finally
         {
             if (tcpSocket != null)
             {
