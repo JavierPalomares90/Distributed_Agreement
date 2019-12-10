@@ -270,17 +270,18 @@ public class ByzAcceptor extends Acceptor
                 } else {
                     logger.debug("Received reject");
                     numRejects++;
-                    if(numAccepts >= quorumSize)
-                    {
-                        logger.debug("Accepts reached quorum. Accepting");
-                        return true;
-                    }
-                    if(numRejects > (numServers - quorumSize))
-                    {
-                        logger.debug("Too many rejects. Quorum not possible. Bailing");
-                        return false;
-                    }
                 }
+                if(numAccepts >= quorumSize)
+                {
+                    logger.debug("Accepts reached quorum. Accepting");
+                    return true;
+                }
+                if(numRejects > (numServers - quorumSize))
+                {
+                    logger.debug("Too many rejects. Quorum not possible. Bailing");
+                    return false;
+                }
+                logger.debug("Num accepts: " + numAccepts + " numRejects: " + numRejects);
 
             }catch (Exception e)
             {
@@ -288,7 +289,11 @@ public class ByzAcceptor extends Acceptor
             }
         }
 
-        return false;
+        /**
+         * TODO: Check this logic. we should almost never get here.
+         */
+        logger.debug("Defaulting to true");
+        return true;
 
     }
 
