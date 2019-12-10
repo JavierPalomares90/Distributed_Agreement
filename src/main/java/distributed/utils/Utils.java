@@ -89,7 +89,7 @@ public class Utils
 
         } catch (Exception e)
         {
-            logger.debug("Unable to send msg to " + acceptor.toString() + ". Assuming acceptor rejected");
+            logger.debug("Unable to send msg " + command + " to " + acceptor.toString() + ". Assuming acceptor rejected");
             response = rejectMessage(command);
         }finally
         {

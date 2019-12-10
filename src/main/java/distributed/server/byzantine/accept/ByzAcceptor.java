@@ -1,17 +1,22 @@
 package distributed.server.byzantine.accept;
 
 import distributed.server.paxos.accept.Acceptor;
-import distributed.server.paxos.requests.Request;
 import distributed.server.pojos.ProposedValue;
 import distributed.server.pojos.SafeValue;
 import distributed.server.pojos.Server;
+import distributed.server.threads.BroadcastThread;
 import distributed.utils.Command;
 import distributed.utils.Utils;
 import lombok.AccessLevel;
 import lombok.Setter;
 import org.apache.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 
@@ -27,6 +32,7 @@ public class ByzAcceptor extends Acceptor
     private Condition waitForSafe;
 
     private static Logger logger = Logger.getLogger(ByzAcceptor.class);
+    private static int NUM_BROADCAST_THREADS = 5;
 
     public String receiveSafeRequest(String[] tokens)
     {
@@ -198,25 +204,44 @@ public class ByzAcceptor extends Acceptor
     {
         // Broadcast the request we received from a proposer to all peers
         String cmd = Command.PREPARE_BROADCAST.getCommand() + " " + id + " " + value;
-        return broadcastCommand(cmd,acceptors,senderID);
+        try
+        {
+            return broadcastCommand(cmd,acceptors,senderID);
+        }catch (Exception e)
+        {
+            logger.debug("Unable to broadcast prepare request",e);
+        }
+        return false;
     }
 
     private boolean broadcastSafeRequest(int id, String value, List<Server> acceptors, int senderID)
     {
         // Broadcast the request we received from a proposer to all peers
         String cmd = Command.SAFE_BROADCAST.getCommand() + " " + id + " " + value;
-        return broadcastCommand(cmd,acceptors, senderID);
+        try
+        {
+            return broadcastCommand(cmd, acceptors, senderID);
+        }catch (Exception e)
+        {
+            logger.debug("Unable to broadcast safe request",e);
+        }
+        return false;
     }
 
-    private static synchronized boolean broadcastCommand(String cmd, List<Server> acceptors, int senderID)
+    private static synchronized boolean broadcastCommand(String cmd, List<Server> acceptors, int senderID) throws InterruptedException
     {
         return broadcastCommand(cmd,acceptors,senderID,0);
 
     }
 
 
-    private static synchronized boolean broadcastCommand(String cmd, List<Server> acceptors, int senderID, int numFaulty)
+    private static synchronized boolean broadcastCommand(String cmd, List<Server> acceptors, int senderID, int numFaulty) throws InterruptedException
     {
+        // Execute broadcast in executor service
+        ExecutorService executor = Executors.newFixedThreadPool(NUM_BROADCAST_THREADS);
+        List<Callable<String>> workers = new ArrayList<>();
+
+
         logger.debug("Broadcasting command " + cmd + "  to " + acceptors.toString());
         int numAccepts = 1;
         int numRejects = 0;
@@ -225,28 +250,46 @@ public class ByzAcceptor extends Acceptor
         logger.debug("Quorum size: " + quorumSize);
         for(Server acceptor: acceptors)
         {
-            if(!acceptor.getServerId().equals(senderID)) {
-                String response = Utils.sendTcpMessage(acceptor, cmd, true);
+            // Don't broadcast the message to the proposer
+            if (!acceptor.getServerId().equals(senderID))
+            {
+                Callable<String> worker = new BroadcastThread(acceptor, cmd, true);
+                workers.add(worker);
+            }
+        }
+
+        List<Future<String>> responses = executor.invokeAll(workers);
+        for(Future<String> futureResponse : responses)
+        {
+            try
+            {
+                String response = futureResponse.get();
                 if (Command.SAFE_BROADCAST_ACCEPT.getCommand().equals(response) || Command.PREPARE_BROADCAST_ACCEPT.getCommand().equals(response)) {
                     logger.debug("Received accept");
                     numAccepts++;
                 } else {
                     logger.debug("Received reject");
                     numRejects++;
+                    if(numAccepts >= quorumSize)
+                    {
+                        logger.debug("Accepts reached quorum. Accepting");
+                        return true;
+                    }
+                    if(numRejects > (numServers - quorumSize))
+                    {
+                        logger.debug("Too many rejects. Quorum not possible. Bailing");
+                        return false;
+                    }
                 }
-            }
-            if(numAccepts >= quorumSize)
+
+            }catch (Exception e)
             {
-                logger.debug("Accepts reached quorum. Accepting");
-                return true;
-            }
-            if(numRejects > (numServers - quorumSize))
-            {
-                logger.debug("Too many rejects. Quorum not possible. Bailing");
-                return false;
+                logger.debug("Unable to process broadcast response from acceptor",e);
             }
         }
+
         return false;
+
     }
 
     public String receiveSafeBroadcast(String[] tokens)

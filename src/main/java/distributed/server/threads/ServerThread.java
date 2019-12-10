@@ -289,20 +289,22 @@ public class ServerThread implements Runnable
             while(this.isRunning.get() == true)
             {
                 Socket socket = null;
+                String senderIP = null;
+                Integer senderPort = null;
                 try
                 {
                     // Open a new socket with clients
                     socket = tcpServerSocket.accept();
-                    logger.debug("Accepted client connection");
+                    // Get sender info to pass to MessageThread
+                    senderIP = socket.getInetAddress().getHostAddress();
+                    senderPort = socket.getPort();
+                    logger.debug("Accepted client connection from " + senderIP + ":" + senderPort);
                 }catch (IOException e)
                 {
                     logger.error("Unable to accept client socker",e);
                 }
                 if(socket != null)
                 {
-                    // Get sender info to pass to MessageThread
-                    String senderIP = socket.getInetAddress().getHostAddress();
-                    Integer senderPort = socket.getPort();
                     Server sender = Utils.getSender(senderIP, senderPort, peers);
                     // Spawn off a new thread to process messages from this client
                     MessageThread clientThread = new MessageThread(sender);
