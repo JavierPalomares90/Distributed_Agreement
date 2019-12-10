@@ -114,6 +114,10 @@ public class ByzProposer extends Proposer
             }
 
         }
+        else
+        {
+            this.serverThread.updateWeightPromisesRejected(weight);
+        }
     }
 
 }
