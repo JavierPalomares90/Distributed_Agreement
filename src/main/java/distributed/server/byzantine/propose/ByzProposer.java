@@ -6,12 +6,19 @@ import distributed.server.paxos.requests.AcceptRequest;
 import distributed.server.paxos.requests.PrepareRequest;
 import distributed.server.paxos.requests.Request;
 import distributed.server.pojos.Server;
+import distributed.server.threads.RequestThread;
 import distributed.utils.Command;
 import distributed.utils.Utils;
 import org.apache.log4j.Logger;
 import org.apache.log4j.spi.LoggerFactory;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * Byzantine proposer
@@ -22,7 +29,46 @@ public class ByzProposer extends Proposer
 
     private void sendSafeRequest(SafeRequest safeRequest, List<Server> acceptors)
     {
-        sendRequest(safeRequest,acceptors,false);
+        try
+        {
+            logger.debug("Sending safe request");
+            sendRequest(safeRequest,acceptors,false);
+        }catch (InterruptedException e)
+        {
+            logger.debug("Unable to send safe request",e);
+        }
+    }
+
+
+
+    @Override
+    protected void sendRequest(Request request, List<Server> acceptors, boolean waitForResponse) throws InterruptedException
+    {
+        // Execute broadcast in executor service
+        ExecutorService executor = Executors.newFixedThreadPool(NUM_REQUEST_THREADS);
+        List<Callable<String>> workers = new ArrayList<>();
+        logger.debug("Executing send request pool: " + request + " waitForResponse: " + waitForResponse);
+        for (Server acceptor : acceptors)
+        {
+            RequestThread worker = new RequestThread(request,acceptor,waitForResponse);
+            workers.add(worker);
+        }
+
+        List<Future<String>> responses = executor.invokeAll(workers);
+        for(Future<String> futureResponse : responses)
+        {
+            try
+            {
+                String response = futureResponse.get();
+                // TODO: Need to figure out how to get the weight
+                parseResponseFromAcceptor(response,new Float(0));
+
+            }catch (Exception e)
+            {
+                logger.debug("Unable to process request to acceptor",e);
+            }
+        }
+
     }
 
     /**
@@ -34,17 +80,31 @@ public class ByzProposer extends Proposer
     @Override
     protected void sendAcceptRequest(AcceptRequest acceptRequest, List<Server> acceptors)
     {
-        sendRequest(acceptRequest, acceptors);
-        // Increment the number of accepts for ourself
-        this.serverThread.getWeightedAccepts().set(this.serverThread.getWeightedAccepts().get() + this.serverThread.getOwnWeight().get());
+        try
+        {
+            logger.debug("sending accept request");
+            // Increment the number of accepts for ourself
+            this.serverThread.getWeightedAccepts().set(this.serverThread.getWeightedAccepts().get() + this.serverThread.getOwnWeight().get());
+            sendRequest(acceptRequest, acceptors);
+        }catch (InterruptedException e)
+        {
+            logger.debug("Unable to send accept request",e);
+        }
     }
     
     @Override
     protected void sendPrepareRequest(PrepareRequest prepareRequest, List<Server> acceptors)
     {
-        sendRequest(prepareRequest, acceptors);
-        // Increment the number of promises for ourself
-        this.serverThread.getWeightedPromises().set(this.serverThread.getWeightedPromises().get() + this.serverThread.getOwnWeight().get());
+        try
+        {
+            logger.debug("sending prepare request");
+            // Increment the number of promises for ourself
+            this.serverThread.getWeightedPromises().set(this.serverThread.getWeightedPromises().get() + this.serverThread.getOwnWeight().get());
+            sendRequest(prepareRequest, acceptors);
+        }catch (InterruptedException e)
+        {
+            logger.debug("Unable to send prepare request",e);
+        }
     }
 
     public boolean safe(List<Server> acceptors)
@@ -58,17 +118,6 @@ public class ByzProposer extends Proposer
         safeRequest.setSenderID(this.serverThread.getServerId());
         sendSafeRequest(safeRequest,acceptors);
         return true;
-    }
-
-    @Override
-    protected void sendRequestToAcceptor(Request request, Server acceptor, boolean waitForResponse)
-    {
-        logger.debug("Sending request " + request.toString() + " to acceptor" + acceptor);
-        String command = request.toString();
-        // Send the command over TCP
-        String response = Utils.sendTcpMessage(acceptor, command, waitForResponse);
-        parseResponseFromAcceptor(response, acceptor.getWeight());
-
     }
 
     /**
