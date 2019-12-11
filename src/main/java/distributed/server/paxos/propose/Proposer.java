@@ -4,6 +4,7 @@ import distributed.server.pojos.Server;
 import distributed.server.paxos.requests.AcceptRequest;
 import distributed.server.paxos.requests.PrepareRequest;
 import distributed.server.paxos.requests.Request;
+import distributed.server.threads.RequestThread;
 import distributed.server.threads.ServerThread;
 import distributed.utils.Command;
 import distributed.utils.Utils;
@@ -14,7 +15,12 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 
 @Data
@@ -23,16 +29,8 @@ public class Proposer
     private static Logger logger = Logger.getLogger(Proposer.class);
     protected ServerThread serverThread;
 
+    protected  static int NUM_REQUEST_THREADS = 5;
 
-    protected void sendRequestToAcceptor(Request request, Server acceptor, boolean waitForResponse)
-    {
-        logger.debug("Sending request " + request.toString() + " to acceptor" + acceptor);
-        String command = request.toString();
-        // Send the command over TCP
-        String response = Utils.sendTcpMessage(acceptor, command, waitForResponse);
-        parseResponseFromAcceptor(response);
-
-    }
 
     /**
      * Parse the responses from the acceptors
@@ -118,17 +116,35 @@ public class Proposer
      * @param acceptors
      * @return
      */
-    protected void sendRequest(Request request, List<Server> acceptors, boolean waitForResponse)
+    protected void sendRequest(Request request, List<Server> acceptors, boolean waitForResponse) throws InterruptedException
     {
-        logger.debug("Sending request " + request + " waitForResponse: " + waitForResponse);
+        // Execute broadcast in executor service
+        ExecutorService executor = Executors.newFixedThreadPool(NUM_REQUEST_THREADS);
+        List<Callable<String>> workers = new ArrayList<>();
+        logger.debug("Executing send request pool: " + request + " waitForResponse: " + waitForResponse);
         for (Server acceptor : acceptors)
         {
-            sendRequestToAcceptor(request, acceptor ,waitForResponse);
+            RequestThread worker = new RequestThread(request,acceptor,waitForResponse);
+            workers.add(worker);
+        }
+
+        List<Future<String>> responses = executor.invokeAll(workers);
+        for(Future<String> futureResponse : responses)
+        {
+            try
+            {
+                String response = futureResponse.get();
+                parseResponseFromAcceptor(response);
+
+            }catch (Exception e)
+            {
+                logger.debug("Unable to process request to acceptor",e);
+            }
         }
 
     }
 
-    protected void sendRequest(Request request, List<Server> acceptors)
+    protected void sendRequest(Request request, List<Server> acceptors) throws InterruptedException
     {
         sendRequest(request,acceptors,true);
     }
@@ -152,10 +168,16 @@ public class Proposer
      */
     protected void sendAcceptRequest(AcceptRequest acceptRequest, List<Server> acceptors)
     {
-        logger.debug("Sending accpet request");
-        sendRequest(acceptRequest, acceptors);
-        // Increment the number of accepts for ourself
-        this.serverThread.incrementNumAccepts();
+        try
+        {
+            logger.debug("Sending accept request");
+            sendRequest(acceptRequest, acceptors);
+            // Increment the number of accepts for ourself
+            this.serverThread.incrementNumAccepts();
+        }catch (InterruptedException e)
+        {
+            logger.error("unable to send accept request",e);
+        }
     }
 
     /**
@@ -165,9 +187,16 @@ public class Proposer
      */
     protected void sendPrepareRequest(PrepareRequest prepareRequest, List<Server> acceptors)
     {
-        sendRequest(prepareRequest, acceptors);
-        // Increment the number of promises for ourself
-        this.serverThread.incrementNumPromises();
+        try
+        {
+            logger.debug("Sending prepare request");
+            sendRequest(prepareRequest, acceptors);
+            // Increment the number of promises for ourself
+            this.serverThread.incrementNumPromises();
+        }catch (InterruptedException e)
+        {
+            logger.error("unable to send prepare request",e);
+        }
     }
 
 
