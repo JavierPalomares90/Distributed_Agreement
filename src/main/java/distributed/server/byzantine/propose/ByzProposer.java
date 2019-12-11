@@ -6,7 +6,9 @@ import distributed.server.paxos.requests.AcceptRequest;
 import distributed.server.paxos.requests.PrepareRequest;
 import distributed.server.paxos.requests.Request;
 import distributed.server.pojos.Server;
+import distributed.server.pojos.WeightedResponse;
 import distributed.server.threads.RequestThread;
+import distributed.server.threads.WeightedRequestThread;
 import distributed.utils.Command;
 import distributed.utils.Utils;
 import org.apache.log4j.Logger;
@@ -46,22 +48,21 @@ public class ByzProposer extends Proposer
     {
         // Execute broadcast in executor service
         ExecutorService executor = Executors.newFixedThreadPool(NUM_REQUEST_THREADS);
-        List<Callable<String>> workers = new ArrayList<>();
+        List<Callable<WeightedResponse>> workers = new ArrayList<>();
         logger.debug("Executing send request pool: " + request + " waitForResponse: " + waitForResponse);
         for (Server acceptor : acceptors)
         {
-            RequestThread worker = new RequestThread(request,acceptor,waitForResponse);
+            WeightedRequestThread worker = new WeightedRequestThread(request,acceptor,waitForResponse,acceptor.getWeight());
             workers.add(worker);
         }
 
-        List<Future<String>> responses = executor.invokeAll(workers);
-        for(Future<String> futureResponse : responses)
+        List<Future<WeightedResponse>> responses = executor.invokeAll(workers);
+        for(Future<WeightedResponse> futureResponse : responses)
         {
             try
             {
-                String response = futureResponse.get();
-                // TODO: Need to figure out how to get the weight
-                parseResponseFromAcceptor(response,new Float(0));
+                WeightedResponse response = futureResponse.get();
+                parseResponseFromAcceptor(response.getResponse(),response.getWeight());
 
             }catch (Exception e)
             {

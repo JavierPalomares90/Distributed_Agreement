@@ -289,11 +289,7 @@ public class ByzAcceptor extends Acceptor
             }
         }
 
-        /**
-         * TODO: Check this logic. we should almost never get here.
-         */
-        logger.debug("Defaulting to true");
-        return true;
+        return false;
 
     }
 
