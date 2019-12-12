@@ -14,7 +14,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
 @Data
-public class Paxos implements Runnable
+public class Paxos
 {
     private static Logger logger = Logger.getLogger(Paxos.class);
 
@@ -22,16 +22,13 @@ public class Paxos implements Runnable
     private List<Server> servers;
 
     @Setter(AccessLevel.PUBLIC)
-    Condition phase1Condition;
+    protected Condition phase1Condition;
 
     @Setter(AccessLevel.PUBLIC)
-    Condition phase2Condition;
+    protected Condition phase2Condition;
 
     @Setter(AccessLevel.PUBLIC)
-    ServerThread serverThread;
-
-    @Setter(AccessLevel.PUBLIC)
-    Lock lock;
+    protected ServerThread serverThread;
 
     public String proposeValue()
     {
@@ -41,7 +38,7 @@ public class Paxos implements Runnable
     // Start the paxos algorithm to reserve the value
     public String proposeValue(String value, List<Server> servers)
     {
-        // Incremeent the paxos id
+        // Increment the paxos id
         int id =  this.serverThread.getPaxosId().incrementAndGet();
 
         // Increment the paxos Id
@@ -52,8 +49,6 @@ public class Paxos implements Runnable
 
         // Phase 1 of Paxos: Propose the value
         Proposer proposer = new Proposer();
-        proposer.setId(id);
-        proposer.setValue(value);
         proposer.setServerThread(this.serverThread);
 
         proposer.propose(servers);
@@ -61,7 +56,7 @@ public class Paxos implements Runnable
         // Wait till we get enough promises to move onto phase 2
         try
         {
-            lock.lock();
+            this.serverThread.getThreadLock().lock();
             while(this.serverThread.getNumPromises().get() < (numServers / 2  + 1))
             {
                 logger.debug("Waiting for enough promises before moving onto phase 2");
@@ -73,7 +68,7 @@ public class Paxos implements Runnable
             logger.error("Unable to await for promises",e);
         }finally
         {
-            lock.unlock();
+            this.serverThread.getThreadLock().unlock();
         }
 
         if(this.serverThread.getNumPromisesRejected().get() < (numServers / 2  + 1))
@@ -87,7 +82,7 @@ public class Paxos implements Runnable
         logger.debug("Waiting for value agreement");
         try
         {
-            lock.lock();
+            this.serverThread.getThreadLock().lock();
             while(this.serverThread.getNumAccepts().get() < (numServers / 2  + 1))
             {
                 logger.debug("Waiting for enough accepts before agreeing to value");
@@ -100,7 +95,7 @@ public class Paxos implements Runnable
             logger.error("Unable to await for accepts",e);
         }finally
         {
-            lock.unlock();
+            this.serverThread.getThreadLock().unlock();
 
         }
         if(this.serverThread.getNumAcceptsRejected().get() < (numServers / 2  + 1))
@@ -110,11 +105,5 @@ public class Paxos implements Runnable
         logger.debug("Agreed to value");
         // The value is agreed to
         return Command.AGREE.getCommand() + " " + value;
-    }
-
-    @Override
-    public void run()
-    {
-        proposeValue();
     }
 }

@@ -2,6 +2,7 @@ package distributed.server.paxos.learn;
 
 import distributed.server.paxos.requests.Request;
 import distributed.server.pojos.Server;
+import lombok.Data;
 import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
@@ -11,17 +12,14 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
+@Data
 public class Learner
 {
     private static Logger logger = Logger.getLogger(Learner.class);
     
     private String value;
 
-    public Learner(String value)
-    {
-        this.value = value;
-    }
-  
+
     public void sendLearnToPeer(Request request, Server peer)
     {
         String command = request.toString();

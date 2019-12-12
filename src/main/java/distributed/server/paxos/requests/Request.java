@@ -6,7 +6,6 @@ import lombok.Data;
 public abstract class Request
 {
     int id;
+    int senderID;
     String value;
-
-
 }

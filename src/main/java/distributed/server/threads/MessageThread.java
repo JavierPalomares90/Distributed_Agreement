@@ -1,10 +1,13 @@
 package distributed.server.threads;
 
+import distributed.server.byzantine.ByzPaxos;
+import distributed.server.byzantine.accept.ByzAcceptor;
 import distributed.server.paxos.Paxos;
 import distributed.server.paxos.accept.Acceptor;
 import distributed.server.pojos.Server;
 import distributed.utils.Command;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.Setter;
 import org.apache.log4j.Logger;
 
@@ -13,6 +16,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -37,71 +41,120 @@ public class MessageThread implements Runnable
     private Condition phase2Condition;
 
     @Setter(AccessLevel.PUBLIC)
-    private Lock lock;
+    private Condition phase1cCondition;
 
+    @Getter
+    private Server sender;
+
+    public MessageThread(Server sender) {
+        this.sender = sender;
+    }
 
    // Start the paxos algorithm to propose the value
     private String proposeValue(String value)
     {
         logger.debug("Proposing value using paxos: " + value);
 
-        Paxos paxos = new Paxos();
+        ByzPaxos paxos = new ByzPaxos();
         paxos.setValue(value);
         paxos.setServers(this.peers);
         paxos.setPhase1Condition(this.phase1Condition);
         paxos.setPhase2Condition(this.phase2Condition);
         paxos.setServerThread(this.serverThread);
-        paxos.setLock(lock);
 
-        Thread paxosThread = new Thread(paxos);
         // Before starting, check if there is already a paxos proposal running
         // If so, stop it and reset for the new proposal
 
-        if(this.serverThread.getPaxosThread() != null)
+        if(this.serverThread.getPaxos() != null)
         {
-            this.serverThread.getPaxosThread().interrupt();
             this.serverThread.init();
         }
-        this.serverThread.setPaxosThread(paxosThread);
-        paxosThread.start();
-
-        return "Value " + value + " is being proposed";
+        this.serverThread.setPaxos(paxos);
+        return paxos.proposeValue();
     }
 
 
     public String receivePrepareRequest(String[] tokens)
     {
-        Acceptor acceptor = new Acceptor();
+        ByzAcceptor acceptor = new ByzAcceptor();
         acceptor.setServerThread(this.serverThread);
+        List<Server> acceptors = new ArrayList<>(this.peers);
+        // Remove the sender from the list of acceptors to broadcast to
+        acceptors.remove(sender);
+        acceptor.setAcceptors(acceptors);
+        acceptor.setWaitForSafe(this.phase1cCondition);
         return acceptor.receivePrepareRequest(tokens);
     }
 
-    public synchronized String receivePromiseRequest(String[] tokens)
+    public synchronized String receivePromiseRequest(String[] tokens, Server sender)
     {
-        Acceptor acceptor = new Acceptor();
+        ByzAcceptor acceptor = new ByzAcceptor();
         acceptor.setServerThread(this.serverThread);
-        return acceptor.receivePromiseRequest(tokens);
+        acceptor.setWaitForSafe(this.phase1cCondition);
+        acceptor.setAcceptors(this.peers);
+        acceptor.receivePromiseRequest(tokens, sender);
+        // Return null. Don't need to write anything back
+        return null;
     }
 
 
     public String receiveAcceptRequest(String[] tokens)
     {
-        Acceptor acceptor = new Acceptor();
+        ByzAcceptor acceptor = new ByzAcceptor();
         acceptor.setServerThread(this.serverThread);
+        acceptor.setWaitForSafe(this.phase1cCondition);
+        acceptor.setAcceptors(this.peers);
         return acceptor.receiveAcceptRequest(tokens);
     }
 
-    public synchronized String receiveAcceptResponse(String[] tokens)
+    public synchronized String receiveAcceptResponse(Server sender)
     {
-        Acceptor acceptor = new Acceptor();
+        ByzAcceptor acceptor = new ByzAcceptor();
         acceptor.setServerThread(this.serverThread);
-        acceptor.setLock(lock);
         acceptor.setPhase2Condition(phase2Condition);
-        return acceptor.receiveAcceptResponse(tokens,peers.size()+1);
+        acceptor.setAcceptors(this.peers);
+        acceptor.setWaitForSafe(this.phase1cCondition);
+        return acceptor.receiveAcceptResponse(sender);
+    }
+
+    private String receiveSafeRequest(String[] tokens)
+    {
+        ByzAcceptor acceptor = new ByzAcceptor();
+        acceptor.setServerThread(this.serverThread);
+        acceptor.setPhase2Condition(phase2Condition);
+        List<Server> acceptors = new ArrayList<>(this.peers);
+        // Remove the sender from the list of acceptors to broadcast to
+        acceptors.remove(sender);
+        acceptor.setAcceptors(acceptors);
+        acceptor.setWaitForSafe(this.phase1cCondition);
+        return acceptor.receiveSafeRequest(tokens);
+    }
+
+    private String receiveSafeBroadcast(String[] tokens)
+    {
+
+        ByzAcceptor acceptor = new ByzAcceptor();
+        acceptor.setServerThread(this.serverThread);
+        acceptor.setPhase2Condition(phase2Condition);
+        acceptor.setAcceptors(this.peers);
+        acceptor.setWaitForSafe(this.phase1cCondition);
+        return acceptor.receiveSafeBroadcast(tokens);
+
+    }
+
+    private String receivePrepareBroadcast(String[] tokens)
+    {
+        ByzAcceptor acceptor = new ByzAcceptor();
+        acceptor.setServerThread(this.serverThread);
+        acceptor.setPhase2Condition(phase2Condition);
+        acceptor.setAcceptors(this.peers);
+        acceptor.setWaitForSafe(this.phase1cCondition);
+        return acceptor.receivePrepareBroadcast(tokens);
+
     }
 
 
-    private String processMessage(String msg)
+    private String processMessage(String msg, Server sender)
     {
         String[] tokens = msg.split("\\s+");
         if(Command.PROPOSE.getCommand().equals(tokens[0]))
@@ -111,7 +164,6 @@ public class MessageThread implements Runnable
             {
                 String value = tokens[1];
                 return proposeValue(value);
-
             }
         }else if(Command.PREPARE_REQUEST.getCommand().equals(tokens[0]))
         {
@@ -126,7 +178,7 @@ public class MessageThread implements Runnable
             // A peer promised to accept our prepare request
             if(tokens.length > 2)
             {
-                return receivePromiseRequest(tokens);
+                return receivePromiseRequest(tokens, sender);
             }
         }
         else if(Command.ACCEPT_REQUEST.getCommand().equals(tokens[0]))
@@ -137,15 +189,29 @@ public class MessageThread implements Runnable
                 return receiveAcceptRequest(tokens) ;
             }
         }
-        else if(Command.ACCEPT.getCommand().equals(tokens[0]))
+        else if(Command.ACCEPT.getCommand().equals(sender))
         {
             // A peer sent a response to our accept request
-            receiveAcceptResponse(tokens);
+            return receiveAcceptResponse(sender);
 
+        }
+        else if(Command.SAFE_REQUEST.getCommand().equals(tokens[0])) {
+            // A proposer sent us a safe request
+            return receiveSafeRequest(tokens);
+
+        }else if(Command.SAFE_BROADCAST.getCommand().equals(tokens[0]))
+        {
+            // An acceptor is broadcasting the safe request it received
+            return receiveSafeBroadcast(tokens);
+        }
+        else if(Command.PREPARE_BROADCAST.getCommand().equals(tokens[0]))
+        {
+            // An acceptor is broadcasting the prepare request it received
+            return receivePrepareBroadcast(tokens);
         }
         return "Unable to process msg " + msg;
     }
-
+    
     public void run()
     {
         try
@@ -158,7 +224,9 @@ public class MessageThread implements Runnable
             {
                 String msg = inputLine;
                 logger.debug("Processing message: " + msg);
-                String response = processMessage(msg);
+
+                String response = processMessage(msg,sender);
+
                 // Increment the logical clock on response
                 if(response != null)
                 {

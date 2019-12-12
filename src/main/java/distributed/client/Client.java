@@ -16,6 +16,8 @@ import java.util.Scanner;
 public class Client
 {
     private static Logger logger = Logger.getLogger(Client.class);
+    private static String ZERO = "0";
+    private static String ONE = "1";
 
 
     private static Server pickServer(List<Server> servers, int index)
@@ -71,7 +73,7 @@ public class Client
         // Write the purchase message
         outputWriter.write(cmd + "\n");
         outputWriter.flush();
-        logger.debug("Wrote message to server. Waiting for response");
+        System.out.print("Wrote message to server. Waiting for response...");
         // Wait for the response from the server
         String response = "";
 
@@ -80,6 +82,7 @@ public class Client
             try
             {
                 response = inputReader.readLine();
+                System.out.print("...");
             } catch (IOException e)
             {
                 logger.error("Unable to read line", e);
@@ -115,19 +118,22 @@ public class Client
 
         List<Server> servers = Utils.getHosts(args[0]);
         Scanner sc = new Scanner(System.in);
-        System.out.println("Usage: " + Command.PROPOSE.getCommand() + " <valueToPropose>");
+        System.out.println("Propose a value:\n [0] 0\n [1] 1");
         while (sc.hasNextLine())
         {
-            System.out.println("Usage: " + Command.PROPOSE.getCommand() + " <valueToPropose>");
-            String cmd = sc.nextLine();
-            String tokens[] = cmd.split("\\s+");
-            if (Command.PROPOSE.getCommand().equals(tokens[0]))
+
+            String value = sc.nextLine();
+            String cmd;
+            if(ZERO.equals(value) || ONE.equals(value))
             {
+                cmd = Command.PROPOSE.getCommand() + " " + value + "\n";
                 sendCmd(servers, cmd);
-            } else
-            {
-                System.out.println("Invalid command " + tokens[0]);
             }
+            else
+            {
+                System.out.println("Invalid value");
+            }
+            System.out.println("Propose a value:\n [0] 0\n [1] 1");
 
         }
     }
