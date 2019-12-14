@@ -146,7 +146,7 @@ public class ByzAcceptor extends Acceptor
     {
         logger.debug("Received accept reponser from server " + sender );
         this.serverThread.getWeightedAccepts().set(this.serverThread.getWeightedAccepts().get() + sender.getWeight());
-        if(this.serverThread.getWeightedAccepts().get() > 5.0/6)
+        if(this.serverThread.getWeightedAccepts().get() > 3.0/4)
         {
             this.serverThread.getThreadLock().lock();
             logger.debug("We've received enough accepts. can agree on a value");
@@ -245,8 +245,8 @@ public class ByzAcceptor extends Acceptor
         logger.debug("Broadcasting command " + cmd + "  to " + acceptors.toString());
         int numAccepts = 1;
         int numRejects = 0;
-        int numServers = acceptors.size() + 1; // Add one because acceptors doesn't include self
-        int quorumSize = Utils.getQuorumSize(numServers,numFaulty);
+        int numServers = acceptors.size(); // Add one because acceptors doesn't include self
+        int quorumSize = numServers / 2 + 1;
         logger.debug("Quorum size: " + quorumSize);
         for(Server acceptor: acceptors)
         {
