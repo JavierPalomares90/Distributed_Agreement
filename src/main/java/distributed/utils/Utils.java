@@ -112,6 +112,11 @@ public class Utils
         return numServers/2 + numFaulty + 1;
     }
 
+    public static double getQuorumWeight(double faultyWeight)
+    {
+        return 1.0 - faultyWeight;
+    }
+
     public static int getAnchorSize(List<Server> servers, double p)
     {
         double weight = 0;

@@ -231,14 +231,14 @@ public class ByzAcceptor extends Acceptor
         return false;
     }
 
-    private static synchronized boolean broadcastCommand(String cmd, List<Server> acceptors, int senderID) throws InterruptedException
+    private synchronized boolean broadcastCommand(String cmd, List<Server> acceptors, int senderID) throws InterruptedException
     {
         return broadcastCommand(cmd,acceptors,senderID,0);
 
     }
 
 
-    private static synchronized boolean broadcastCommand(String cmd, List<Server> acceptors, int senderID, int numFaulty) throws InterruptedException
+    private synchronized boolean broadcastCommand(String cmd, List<Server> acceptors, int senderID, int numFaulty) throws InterruptedException
     {
         // Execute broadcast in executor service
         ExecutorService executor = Executors.newFixedThreadPool(NUM_BROADCAST_THREADS);
@@ -248,11 +248,10 @@ public class ByzAcceptor extends Acceptor
         logger.debug("Broadcasting command " + cmd + "  to " + acceptors.toString());
         double acceptedWeight = 0.0;
         double rejectedWeight = 0.0;
-        int numAccepts = 1;
-        int numRejects = 0;
+        acceptedWeight += this.serverThread.getOwnWeight().doubleValue();
         int numServers = acceptors.size() + 1; // Add one because acceptors doesn't include self
-        int quorumSize = Utils.getQuorumSize(numServers,numFaulty);
-        logger.debug("Quorum size: " + quorumSize);
+        double quorumWeight = Utils.getQuorumWeight(.33);
+        logger.debug("Quorum weight : " + quorumWeight);
         for(Server acceptor: acceptors)
         {
             // Don't broadcast the message to the proposer
@@ -272,22 +271,21 @@ public class ByzAcceptor extends Acceptor
                 Float weight = futureResponse.get().getWeight();
                 if (Command.SAFE_BROADCAST_ACCEPT.getCommand().equals(response) || Command.PREPARE_BROADCAST_ACCEPT.getCommand().equals(response)) {
                     logger.debug("Received accept");
-                    numAccepts++;
+                    acceptedWeight += weight;
                 } else {
                     logger.debug("Received reject");
-                    numRejects++;
+                    rejectedWeight += weight;
                 }
-                if(numAccepts >= quorumSize)
+                if(acceptedWeight >= quorumWeight)
                 {
                     logger.debug("Accepts reached quorum. Accepting");
                     return true;
                 }
-                if(numRejects > (numServers - quorumSize))
+                if(rejectedWeight > (1.0 - quorumWeight))
                 {
                     logger.debug("Too many rejects. Quorum not possible. Bailing");
                     return false;
                 }
-                logger.debug("Num accepts: " + numAccepts + " numRejects: " + numRejects);
 
             }catch (Exception e)
             {
