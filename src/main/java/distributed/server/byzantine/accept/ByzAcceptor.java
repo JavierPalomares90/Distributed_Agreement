@@ -4,7 +4,10 @@ import distributed.server.paxos.accept.Acceptor;
 import distributed.server.pojos.ProposedValue;
 import distributed.server.pojos.SafeValue;
 import distributed.server.pojos.Server;
+import distributed.server.pojos.WeightedResponse;
 import distributed.server.threads.BroadcastThread;
+import distributed.server.threads.WeightedBroadcastThread;
+import distributed.server.threads.WeightedRequestThread;
 import distributed.utils.Command;
 import distributed.utils.Utils;
 import lombok.AccessLevel;
@@ -239,10 +242,12 @@ public class ByzAcceptor extends Acceptor
     {
         // Execute broadcast in executor service
         ExecutorService executor = Executors.newFixedThreadPool(NUM_BROADCAST_THREADS);
-        List<Callable<String>> workers = new ArrayList<>();
+        List<Callable<WeightedResponse>> workers = new ArrayList<>();
 
 
         logger.debug("Broadcasting command " + cmd + "  to " + acceptors.toString());
+        double acceptedWeight = 0.0;
+        double rejectedWeight = 0.0;
         int numAccepts = 1;
         int numRejects = 0;
         int numServers = acceptors.size() + 1; // Add one because acceptors doesn't include self
@@ -253,17 +258,18 @@ public class ByzAcceptor extends Acceptor
             // Don't broadcast the message to the proposer
             if (!acceptor.getServerId().equals(senderID))
             {
-                Callable<String> worker = new BroadcastThread(acceptor, cmd, true);
+                Callable<WeightedResponse> worker = new WeightedBroadcastThread(acceptor,cmd,true,acceptor.getWeight());
                 workers.add(worker);
             }
         }
 
-        List<Future<String>> responses = executor.invokeAll(workers);
-        for(Future<String> futureResponse : responses)
+        List<Future<WeightedResponse>> responses = executor.invokeAll(workers);
+        for(Future<WeightedResponse> futureResponse : responses)
         {
             try
             {
-                String response = futureResponse.get();
+                String response = futureResponse.get().getResponse();
+                Float weight = futureResponse.get().getWeight();
                 if (Command.SAFE_BROADCAST_ACCEPT.getCommand().equals(response) || Command.PREPARE_BROADCAST_ACCEPT.getCommand().equals(response)) {
                     logger.debug("Received accept");
                     numAccepts++;
