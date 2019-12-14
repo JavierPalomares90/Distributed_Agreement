@@ -248,17 +248,22 @@ public class ByzAcceptor extends Acceptor
         logger.debug("Broadcasting command " + cmd + "  to " + acceptors.toString());
         double acceptedWeight = 0.0;
         double rejectedWeight = 0.0;
+        // Add our own weight and the weight of the sender
         acceptedWeight += this.serverThread.getOwnWeight().doubleValue();
-        int numServers = acceptors.size() + 1; // Add one because acceptors doesn't include self
-        double quorumWeight = Utils.getQuorumWeight(.33);
+        double quorumWeight = Utils.getQuorumWeight(.25);
         logger.debug("Quorum weight : " + quorumWeight);
         for(Server acceptor: acceptors)
         {
+
             // Don't broadcast the message to the proposer
             if (!acceptor.getServerId().equals(senderID))
             {
                 Callable<WeightedResponse> worker = new WeightedBroadcastThread(acceptor,cmd,true,acceptor.getWeight());
                 workers.add(worker);
+            }else
+            {
+                // Add the proposer's accepted weight
+                acceptedWeight += acceptor.getWeight().doubleValue();
             }
         }
 
@@ -270,11 +275,11 @@ public class ByzAcceptor extends Acceptor
                 String response = futureResponse.get().getResponse();
                 Float weight = futureResponse.get().getWeight();
                 if (Command.SAFE_BROADCAST_ACCEPT.getCommand().equals(response) || Command.PREPARE_BROADCAST_ACCEPT.getCommand().equals(response)) {
-                    logger.debug("Received accept");
-                    acceptedWeight += weight;
+                    acceptedWeight += weight.doubleValue();
+                    logger.debug("Received accept with weight " + weight + ". Accepted weight: " + acceptedWeight);
                 } else {
-                    logger.debug("Received reject");
-                    rejectedWeight += weight;
+                    rejectedWeight += weight.doubleValue();
+                    logger.debug("Received reject with weight " + weight + ". Rejected weight " + rejectedWeight);
                 }
                 if(acceptedWeight >= quorumWeight)
                 {

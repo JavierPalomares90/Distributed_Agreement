@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Utils
 {
     // Set the timeout when sending tcp messages
-    private static int TIMEOUT_MILLIS = 1000;
+    private static int TIMEOUT_MILLIS = 3000;
 
     private static Logger logger = Logger.getLogger(Utils.class);
 
