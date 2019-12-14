@@ -135,34 +135,34 @@ public class ByzProposer extends Proposer
         if(response != null)
         {
             String[] tokens = response.split("\\s+");
-            if(tokens.length > 1)
-            {
                 if (Command.PROMISE.getCommand().equals(tokens[0]))
                 {
                     // Update the id
                     updateIdAndValue(tokens);
                     // the prepare request was accepted
                     this.serverThread.updatePromisedWeight(weight);
+                    logger.debug("Promised weight: " + this.serverThread.getWeightedPromises().get());
 
                 }else if (Command.ACCEPT.getCommand().equals(tokens[0]))
                 {
                     // the accept reqeust was accepted
                     updateId(tokens);
                     this.serverThread.updateAcceptedWeight(weight);
+                    logger.debug("Accepted weight: " + this.serverThread.getWeightedAccepts().get());
                 }else if(Command.REJECT_PREPARE.getCommand().equals(tokens[0]))
                 {
                     // the prepare request was rejected
                     updateIdAndValue(tokens);
                     this.serverThread.updateWeightPromisesRejected(weight);
+                    logger.debug("Promise rejected weight: " + this.serverThread.getWeightPromisesRejected().get());
 
                 }else if(Command.REJECT_ACCEPT.getCommand().equals(tokens[0]))
                 {
                     // The accept request was rejected
                     updateId(tokens);
                     this.serverThread.updateWeightAcceptsRejected(weight);
+                    logger.debug("Rejected weight: " + this.serverThread.getWeightAcceptsRejected().get());
                 }
-            }
-
         }
     }
 

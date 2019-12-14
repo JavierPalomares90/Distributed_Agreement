@@ -149,7 +149,7 @@ public class ByzAcceptor extends Acceptor
     {
         logger.debug("Received accept reponser from server " + sender );
         this.serverThread.getWeightedAccepts().set(this.serverThread.getWeightedAccepts().get() + sender.getWeight());
-        if(this.serverThread.getWeightedAccepts().get() > 5.0/6)
+        if(this.serverThread.getWeightedAccepts().get() > 3.0/4)
         {
             this.serverThread.getThreadLock().lock();
             logger.debug("We've received enough accepts. can agree on a value");
