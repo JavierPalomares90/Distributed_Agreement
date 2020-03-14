@@ -1,5 +1,6 @@
 package distributed.server.paxos.accept;
 
+import distributed.server.pojos.Server;
 import distributed.server.threads.ServerThread;
 import distributed.utils.Command;
 import lombok.AccessLevel;
@@ -24,7 +25,7 @@ public class Acceptor
 
     private static Logger logger = Logger.getLogger(Acceptor.class);
 
-    public String receivePromiseRequest(String[] tokens)
+    public String receivePromiseRequest(String[] tokens, Server sender)
     {
         logger.debug("Received promise request");
         int id = Integer.parseInt(tokens[1]);
@@ -34,6 +35,11 @@ public class Acceptor
         }
         this.serverThread.incrementNumPromises();
         return "Received promise request";
+    }
+
+    public String receivePromiseRequest(String[] tokens)
+    {
+        return receivePromiseRequest(tokens,null);
     }
 
     public String receiveAcceptRequest(String[] tokens)

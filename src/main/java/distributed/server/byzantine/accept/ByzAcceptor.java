@@ -80,11 +80,11 @@ public class ByzAcceptor extends Acceptor
     }
 
     /**
-     * TODO: Match the signatures so this method is overriden
      * @param tokens
      * @param sender
      * @return
      */
+    @Override
     public String receivePromiseRequest(String[] tokens, Server sender)
     {
         logger.debug("Received promise request");
