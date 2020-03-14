@@ -16,8 +16,8 @@ import java.util.Scanner;
 public class Client
 {
     private static Logger logger = Logger.getLogger(Client.class);
-    private static String ZERO = "0";
-    private static String ONE = "1";
+    protected static String ZERO = "0";
+    protected static String ONE = "1";
 
 
     private static Server pickServer(List<Server> servers, int index)
@@ -55,7 +55,13 @@ public class Client
 
     }
 
-    private static void sendCmd(List<Server> servers, String cmd)
+    public static void sendValue(List<Server> servers, String value)
+    {
+        String cmd = Command.PROPOSE.getCommand() + " " + value + "\n";
+        sendCmd(servers, cmd);
+    }
+
+    public static void sendCmd(List<Server> servers, String cmd)
     {
         Socket socket = getSocket(servers);
         PrintWriter outputWriter = null;
@@ -126,8 +132,7 @@ public class Client
             String cmd;
             if(ZERO.equals(value) || ONE.equals(value))
             {
-                cmd = Command.PROPOSE.getCommand() + " " + value + "\n";
-                sendCmd(servers, cmd);
+                sendCmd(servers, value);
             }
             else
             {
