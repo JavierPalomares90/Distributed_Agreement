@@ -7,4 +7,7 @@ import distributed.server.paxos.learn.Learner;
  */
 public class ByzLearner extends Learner
 {
+    /**
+     * TODO: Add learner
+     */
 }
