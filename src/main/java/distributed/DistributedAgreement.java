@@ -31,6 +31,23 @@ public class DistributedAgreement
         return null;
     }
 
+    public static void processClientMessages(Server host,List<Server> peers)
+    {
+        ServerThread serverThread = new ServerThread(host.getWeight(), host.getServerId());
+        processClientMessages(host, peers);
+    }
+
+    public static void processClientMessages(Server host,List<Server> peers,ServerThread serverThread)
+    {
+        serverThread.setIpAddress(host.getIpAddress());
+        // Remove self from the list of hosts
+        peers.remove(host);
+        serverThread.setPeers(peers);
+        serverThread.setPort(host.getPort());
+        serverThread.setServerId(host.getServerId());
+        new Thread(serverThread).start();
+    }
+
     public static void main(String[] args)
     {
         if(args.length < 2)
@@ -55,14 +72,7 @@ public class DistributedAgreement
         }
 
         // Spawn off a thread to handle messages from client
-        ServerThread serverThread = new ServerThread(host.getWeight(), host.getServerId());
-        serverThread.setIpAddress(host.getIpAddress());
-        // Remove self from the list of hosts
-        peers.remove(host);
-        serverThread.setPeers(peers);
-        serverThread.setPort(host.getPort());
-        serverThread.setServerId(host.getServerId());
-        new Thread(serverThread).start();
+        processClientMessages(host, peers);
     }
 
 

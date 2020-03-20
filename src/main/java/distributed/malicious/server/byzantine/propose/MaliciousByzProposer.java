@@ -1,5 +1,7 @@
 package distributed.malicious.server.byzantine.propose;
 
+import org.apache.log4j.Logger;
+
 import distributed.server.byzantine.propose.ByzProposer;
 
 /**
@@ -7,5 +9,6 @@ import distributed.server.byzantine.propose.ByzProposer;
  */
 public class MaliciousByzProposer extends ByzProposer
 {
+    private static Logger logger = Logger.getLogger(MaliciousByzProposer.class);
 
 }
