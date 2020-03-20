@@ -1,4 +1,4 @@
-package distributed.server.malicious.byzantine.accept;
+package distributed.malicious.server.byzantine.accept;
 
 import distributed.server.byzantine.accept.ByzAcceptor;
 

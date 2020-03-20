@@ -1,4 +1,4 @@
-package distributed.server.malicious.byzantine.propose;
+package distributed.malicious.server.byzantine.propose;
 
 import distributed.server.byzantine.propose.ByzProposer;
 

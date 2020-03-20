@@ -1,4 +1,4 @@
-package distributed.server.malicious.byzantine.learn;
+package distributed.malicious.server.byzantine.learn;
 
 import distributed.server.byzantine.learn.ByzLearner;
 

@@ -1,4 +1,4 @@
-package distributed.server.malicious;
+package distributed.malicious;
 
 import distributed.DistributedAgreement;
 

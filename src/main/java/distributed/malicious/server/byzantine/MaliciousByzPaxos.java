@@ -1,4 +1,4 @@
-package distributed.server.malicious.byzantine;
+package distributed.malicious.server.byzantine;
 
 import org.apache.log4j.Logger;
 
