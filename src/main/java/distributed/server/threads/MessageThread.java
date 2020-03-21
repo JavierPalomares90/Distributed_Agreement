@@ -51,7 +51,7 @@ public class MessageThread implements Runnable
     }
 
    // Start the paxos algorithm to propose the value
-    private String proposeValue(String value)
+    protected String proposeValue(String value)
     {
         logger.debug("Proposing value using paxos: " + value);
 
@@ -117,7 +117,7 @@ public class MessageThread implements Runnable
         return acceptor.receiveAcceptResponse(sender);
     }
 
-    private String receiveSafeRequest(String[] tokens)
+    protected String receiveSafeRequest(String[] tokens)
     {
         ByzAcceptor acceptor = new ByzAcceptor();
         acceptor.setServerThread(this.serverThread);
@@ -130,7 +130,7 @@ public class MessageThread implements Runnable
         return acceptor.receiveSafeRequest(tokens);
     }
 
-    private String receiveSafeBroadcast(String[] tokens)
+    protected String receiveSafeBroadcast(String[] tokens)
     {
 
         ByzAcceptor acceptor = new ByzAcceptor();
@@ -142,7 +142,7 @@ public class MessageThread implements Runnable
 
     }
 
-    private String receivePrepareBroadcast(String[] tokens)
+    protected String receivePrepareBroadcast(String[] tokens)
     {
         ByzAcceptor acceptor = new ByzAcceptor();
         acceptor.setServerThread(this.serverThread);
