@@ -125,7 +125,7 @@ public class ByzProposer extends Proposer
      * Parse the responses from the acceptors
      * @param response
      */
-    private void parseResponseFromAcceptor(String response, Float weight)
+    protected void parseResponseFromAcceptor(String response, Float weight)
     {
         /**
          * TODO: If the request timed out, the input to this message is null, so neither accepts or rejects will update.
