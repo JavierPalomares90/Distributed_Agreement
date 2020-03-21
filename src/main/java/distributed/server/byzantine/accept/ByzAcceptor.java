@@ -203,7 +203,7 @@ public class ByzAcceptor extends Acceptor
 
     }
 
-    private boolean broadcastPrepareRequest(int id, String value, List<Server> acceptors, int senderID)
+    protected boolean broadcastPrepareRequest(int id, String value, List<Server> acceptors, int senderID)
     {
         // Broadcast the request we received from a proposer to all peers
         String cmd = Command.PREPARE_BROADCAST.getCommand() + " " + id + " " + value + "\n";
@@ -217,7 +217,7 @@ public class ByzAcceptor extends Acceptor
         return false;
     }
 
-    private boolean broadcastSafeRequest(int id, String value, List<Server> acceptors, int senderID)
+    protected boolean broadcastSafeRequest(int id, String value, List<Server> acceptors, int senderID)
     {
         // Broadcast the request we received from a proposer to all peers
         String cmd = Command.SAFE_BROADCAST.getCommand() + " " + id + " " + value + "\n";
@@ -238,7 +238,7 @@ public class ByzAcceptor extends Acceptor
     }
 
 
-    private synchronized boolean broadcastCommand(String cmd, List<Server> acceptors, int senderID, int numFaulty) throws InterruptedException
+    protected synchronized boolean broadcastCommand(String cmd, List<Server> acceptors, int senderID, int numFaulty) throws InterruptedException
     {
         // Execute broadcast in executor service
         ExecutorService executor = Executors.newFixedThreadPool(NUM_BROADCAST_THREADS);
