@@ -50,18 +50,13 @@ public class MessageThread implements Runnable
         this.sender = sender;
     }
 
-   // Start the paxos algorithm to propose the value
-    protected String proposeValue(String value)
+    protected String startPaxos(ByzPaxos paxos,String value)
     {
-        logger.debug("Proposing value using paxos: " + value);
-
-        ByzPaxos paxos = new ByzPaxos();
         paxos.setValue(value);
         paxos.setServers(this.peers);
         paxos.setPhase1Condition(this.phase1Condition);
         paxos.setPhase2Condition(this.phase2Condition);
         paxos.setServerThread(this.serverThread);
-
         // Before starting, check if there is already a paxos proposal running
         // If so, stop it and reset for the new proposal
 
@@ -71,6 +66,17 @@ public class MessageThread implements Runnable
         }
         this.serverThread.setPaxos(paxos);
         return paxos.proposeValue();
+    }
+
+   // Start the paxos algorithm to propose the value
+    protected String proposeValue(String value)
+    {
+        logger.debug("Proposing value using paxos: " + value);
+
+        ByzPaxos paxos = new ByzPaxos();
+
+        return startPaxos(paxos,value);
+
     }
 
 

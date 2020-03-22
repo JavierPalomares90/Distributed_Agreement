@@ -1,10 +1,17 @@
 package distributed.malicious.threads;
 
+import org.apache.log4j.Logger;
+
+import distributed.malicious.server.byzantine.MaliciousByzPaxos;
 import distributed.server.pojos.Server;
 import distributed.server.threads.MessageThread;
+import distributed.server.byzantine.ByzPaxos;
 
-public class MaliciousMessageThread extends MessageThread {
+public class MaliciousMessageThread extends MessageThread 
+{
 
+    private static Logger logger = Logger.getLogger(MaliciousMessageThread.class);
+    
     public MaliciousMessageThread(Server sender) {
         super(sender);
     }
@@ -13,8 +20,11 @@ public class MaliciousMessageThread extends MessageThread {
    // Maliciously propose a value
     protected String proposeValue(String value)
     {
-        // TODO: Complete impl
-        return null;
+        logger.debug("The client wants us to propose value: " + value);
+        logger.debug("We're going to malicious propose this!");
+        ByzPaxos maliciousPaxos = new MaliciousByzPaxos();
+
+        return startPaxos(maliciousPaxos,value);
     }
 
     @Override
