@@ -79,10 +79,8 @@ public class MessageThread implements Runnable
 
     }
 
-
-    public String receivePrepareRequest(String[] tokens)
+    protected String receivePrepareRequest(ByzAcceptor acceptor,String[] tokens)
     {
-        ByzAcceptor acceptor = new ByzAcceptor();
         acceptor.setServerThread(this.serverThread);
         List<Server> acceptors = new ArrayList<>(this.peers);
         // Remove the sender from the list of acceptors to broadcast to
@@ -92,70 +90,110 @@ public class MessageThread implements Runnable
         return acceptor.receivePrepareRequest(tokens);
     }
 
-    public synchronized String receivePromiseRequest(String[] tokens, Server sender)
+
+    public String receivePrepareRequest(String[] tokens)
     {
         ByzAcceptor acceptor = new ByzAcceptor();
+        return receivePrepareRequest(acceptor,tokens);
+    }
+
+    protected String receivePromiseRequest(ByzAcceptor acceptor, String[] tokens, Server sender)
+    {
         acceptor.setServerThread(this.serverThread);
         acceptor.setWaitForSafe(this.phase1cCondition);
         acceptor.setAcceptors(this.peers);
         acceptor.receivePromiseRequest(tokens, sender);
         // Return null. Don't need to write anything back
         return null;
+
     }
 
-
-    public String receiveAcceptRequest(String[] tokens)
+    public synchronized String receivePromiseRequest(String[] tokens, Server sender)
     {
         ByzAcceptor acceptor = new ByzAcceptor();
+        return receivePromiseRequest(acceptor,tokens,sender);
+    }
+
+    protected String receiveAcceptRequest(ByzAcceptor acceptor, String[] tokens)
+    {
         acceptor.setServerThread(this.serverThread);
         acceptor.setWaitForSafe(this.phase1cCondition);
         acceptor.setAcceptors(this.peers);
         return acceptor.receiveAcceptRequest(tokens);
     }
 
-    public synchronized String receiveAcceptResponse(Server sender)
+
+    public String receiveAcceptRequest(String[] tokens)
     {
         ByzAcceptor acceptor = new ByzAcceptor();
+        return receiveAcceptRequest(acceptor, tokens);
+    }
+
+    protected String receiveAcceptResponse(ByzAcceptor acceptor, Server sender)
+    {
         acceptor.setServerThread(this.serverThread);
-        acceptor.setPhase2Condition(phase2Condition);
+        acceptor.setPhase2Condition(this.phase2Condition);
         acceptor.setAcceptors(this.peers);
         acceptor.setWaitForSafe(this.phase1cCondition);
         return acceptor.receiveAcceptResponse(sender);
     }
 
-    protected String receiveSafeRequest(String[] tokens)
+    public synchronized String receiveAcceptResponse(Server sender)
     {
         ByzAcceptor acceptor = new ByzAcceptor();
+        return receiveAcceptResponse(acceptor, sender);
+    }
+
+
+    protected String receiveSafeRequest(ByzAcceptor acceptor, String[] tokens)
+    {
         acceptor.setServerThread(this.serverThread);
-        acceptor.setPhase2Condition(phase2Condition);
+        acceptor.setPhase2Condition(this.phase2Condition);
         List<Server> acceptors = new ArrayList<>(this.peers);
         // Remove the sender from the list of acceptors to broadcast to
         acceptors.remove(sender);
         acceptor.setAcceptors(acceptors);
         acceptor.setWaitForSafe(this.phase1cCondition);
         return acceptor.receiveSafeRequest(tokens);
+
+    }
+
+    protected String receiveSafeRequest(String[] tokens)
+    {
+        ByzAcceptor acceptor = new ByzAcceptor();
+        return receiveSafeRequest(acceptor, tokens);
+    }
+
+    protected String receiveSafeBroadcast(ByzAcceptor acceptor, String[] tokens)
+    {
+        acceptor.setServerThread(this.serverThread);
+        acceptor.setPhase2Condition(this.phase2Condition);
+        acceptor.setAcceptors(this.peers);
+        acceptor.setWaitForSafe(this.phase1cCondition);
+        return acceptor.receiveSafeBroadcast(tokens);
     }
 
     protected String receiveSafeBroadcast(String[] tokens)
     {
 
         ByzAcceptor acceptor = new ByzAcceptor();
+        return receiveSafeBroadcast(acceptor, tokens);
+
+    }
+
+    protected String receivePrepareBroadcast(ByzAcceptor acceptor, String[] tokens)
+    {
         acceptor.setServerThread(this.serverThread);
-        acceptor.setPhase2Condition(phase2Condition);
+        acceptor.setPhase2Condition(this.phase2Condition);
         acceptor.setAcceptors(this.peers);
         acceptor.setWaitForSafe(this.phase1cCondition);
-        return acceptor.receiveSafeBroadcast(tokens);
-
+        return acceptor.receivePrepareBroadcast(tokens);
     }
 
     protected String receivePrepareBroadcast(String[] tokens)
     {
         ByzAcceptor acceptor = new ByzAcceptor();
-        acceptor.setServerThread(this.serverThread);
-        acceptor.setPhase2Condition(phase2Condition);
-        acceptor.setAcceptors(this.peers);
-        acceptor.setWaitForSafe(this.phase1cCondition);
-        return acceptor.receivePrepareBroadcast(tokens);
+        return receivePrepareBroadcast(acceptor, tokens);
 
     }
 

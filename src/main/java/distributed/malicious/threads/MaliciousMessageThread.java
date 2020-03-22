@@ -3,9 +3,11 @@ package distributed.malicious.threads;
 import org.apache.log4j.Logger;
 
 import distributed.malicious.server.byzantine.MaliciousByzPaxos;
+import distributed.malicious.server.byzantine.accept.MaliciousByzAcceptor;
 import distributed.server.pojos.Server;
 import distributed.server.threads.MessageThread;
 import distributed.server.byzantine.ByzPaxos;
+import distributed.server.byzantine.accept.ByzAcceptor;
 
 public class MaliciousMessageThread extends MessageThread 
 {
@@ -16,8 +18,8 @@ public class MaliciousMessageThread extends MessageThread
         super(sender);
     }
 
+    // Maliciously propose a value
     @Override
-   // Maliciously propose a value
     protected String proposeValue(String value)
     {
         logger.debug("The client wants us to propose value: " + value);
@@ -27,51 +29,59 @@ public class MaliciousMessageThread extends MessageThread
         return startPaxos(maliciousPaxos,value);
     }
 
-    @Override
     // Maliciously receive prepare request
+    @Override
     public String receivePrepareRequest(String[] tokens)
     {
-        // TODO: Complete impl
-        return null;
+        ByzAcceptor acceptor = new MaliciousByzAcceptor();
+        return receivePrepareRequest(acceptor,tokens);
     }
 
-    @Override
     // Maliciously receive promise request
+    @Override
     public synchronized String receivePromiseRequest(String[] tokens, Server sender)
     {
-        // TODO: Complete impl
-        return null;
+        ByzAcceptor acceptor = new MaliciousByzAcceptor();
+        return receivePromiseRequest(acceptor,tokens,sender);
     }
 
-    @Override
     // Maliciously receive accept request
+    @Override
     public String receiveAcceptRequest(String[] tokens)
     {
-        // TODO: Complete impl
-        return null;
+        ByzAcceptor acceptor = new MaliciousByzAcceptor();
+        return receiveAcceptRequest(acceptor, tokens);
+    }
+
+    // Maliciously receive AcceptResponse
+    @Override
+    public synchronized String receiveAcceptResponse(Server sender)
+    {
+        ByzAcceptor acceptor = new MaliciousByzAcceptor();
+        return receiveAcceptResponse(acceptor, sender);
     }
 
     @Override
     // Maliciously receive safe request
     protected String receiveSafeRequest(String[] tokens)
     {
-        // TODO: Complete impl
-        return null;
+        ByzAcceptor acceptor = new MaliciousByzAcceptor();
+        return receiveSafeRequest(acceptor, tokens);
     }
 
     @Override
     // Maliciously receive safe broadcast 
     protected String receiveSafeBroadcast(String[] tokens)
     {
-        // TODO: Complete impl
-        return null;
+        ByzAcceptor acceptor = new MaliciousByzAcceptor();
+        return receiveSafeBroadcast(acceptor, tokens);
     }
 
     @Override
     // Maliciously receive prepare broadcast 
     protected String receivePrepareBroadcast(String[] tokens)
     {
-        // TODO: Complete impl
-        return null;
+        ByzAcceptor acceptor = new MaliciousByzAcceptor();
+        return receivePrepareBroadcast(acceptor, tokens);
     }
 }
