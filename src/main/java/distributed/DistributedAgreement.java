@@ -31,13 +31,13 @@ public class DistributedAgreement
         return null;
     }
 
-    private static void processClientMessages(Server host,List<Server> peers)
+    protected static void processClientMessages(Server host,List<Server> peers)
     {
         ServerThread serverThread = new ServerThread(host.getWeight(), host.getServerId());
-        processClientMessages(host, peers);
+        processClientMessages(host, peers,serverThread);
     }
 
-    private static void processClientMessages(Server host,List<Server> peers,ServerThread serverThread)
+    protected static void processClientMessages(Server host,List<Server> peers,ServerThread serverThread)
     {
         serverThread.setIpAddress(host.getIpAddress());
         // Remove self from the list of hosts

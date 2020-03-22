@@ -129,7 +129,6 @@ public class Client
         {
 
             String value = sc.nextLine();
-            String cmd;
             if(ZERO.equals(value) || ONE.equals(value))
             {
                 sendCmd(servers, value);
@@ -141,5 +140,6 @@ public class Client
             System.out.println("Propose a value:\n [0] 0\n [1] 1");
 
         }
+        sc.close();
     }
 }

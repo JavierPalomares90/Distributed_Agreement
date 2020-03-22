@@ -18,11 +18,11 @@ public class MaliciousDistributedAgreement extends DistributedAgreement
     private static Logger logger = Logger.getLogger(MaliciousDistributedAgreement.class);
 
 
-    private static void processClientMessages(Server host,List<Server> peers)
+    protected static void processClientMessages(Server host,List<Server> peers)
     {
         logger.debug("Spawning off a malicious server thread");
         ServerThread serverThread = new MaliciousServerThread(host.getWeight(), host.getServerId());
-        processClientMessages(host, peers);
+        processClientMessages(host, peers, serverThread);
     }
 
 }
