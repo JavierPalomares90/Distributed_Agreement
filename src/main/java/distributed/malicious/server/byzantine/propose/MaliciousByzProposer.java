@@ -37,7 +37,19 @@ public class MaliciousByzProposer extends ByzProposer
     @Override
     protected void sendPrepareRequest(PrepareRequest prepareRequest, List<Server> acceptors)
     {
-        // TODO: Complete impl
+        // To confuse each of the acceptors, we're going to send a request with the same id,
+        // but a random value
+        try
+        {
+            logger.debug("sending prepare request");
+            // Increment the number of promises for ourself
+            // TODO: Maliciously increment weights
+            this.serverThread.getWeightedPromises().set(this.serverThread.getWeightedPromises().get() + this.serverThread.getOwnWeight().get());
+            sendRequest(prepareRequest, acceptors);
+        }catch (InterruptedException e)
+        {
+            logger.debug("Unable to send prepare request",e);
+        }
     }
 
     /**
@@ -56,7 +68,5 @@ public class MaliciousByzProposer extends ByzProposer
     {
         return false;
     }
-
-
 
 }
