@@ -9,7 +9,6 @@ import lombok.Setter;
 import org.apache.log4j.Logger;
 
 import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
 
 @Data
 public class Acceptor

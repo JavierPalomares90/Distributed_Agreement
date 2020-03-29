@@ -7,14 +7,9 @@ import distributed.server.paxos.requests.Request;
 import distributed.server.threads.RequestThread;
 import distributed.server.threads.ServerThread;
 import distributed.utils.Command;
-import distributed.utils.Utils;
 import lombok.Data;
 import org.apache.log4j.Logger;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;

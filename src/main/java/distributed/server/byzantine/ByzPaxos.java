@@ -2,7 +2,6 @@ package distributed.server.byzantine;
 
 import distributed.server.byzantine.propose.ByzProposer;
 import distributed.server.paxos.Paxos;
-import distributed.server.paxos.propose.Proposer;
 import distributed.server.pojos.Server;
 import distributed.utils.Command;
 import org.apache.log4j.Logger;
@@ -24,9 +23,6 @@ public class ByzPaxos extends Paxos
 
         // Increment the paxos Id
         logger.debug("Proposing value " + value + " with id " + id);
-
-        // Servers list doesn't include "this" server
-        int numServers = servers.size() + 1;
 
         // Phase 1 of Paxos: Propose the value
         ByzProposer proposer = new ByzProposer();

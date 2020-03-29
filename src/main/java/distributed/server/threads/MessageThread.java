@@ -2,8 +2,6 @@ package distributed.server.threads;
 
 import distributed.server.byzantine.ByzPaxos;
 import distributed.server.byzantine.accept.ByzAcceptor;
-import distributed.server.paxos.Paxos;
-import distributed.server.paxos.accept.Acceptor;
 import distributed.server.pojos.Server;
 import distributed.utils.Command;
 import lombok.AccessLevel;
@@ -19,7 +17,6 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
 
 public class MessageThread implements Runnable
 {

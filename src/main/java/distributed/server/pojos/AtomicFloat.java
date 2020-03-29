@@ -5,6 +5,10 @@ import static java.lang.Float.*;
 
 public class AtomicFloat extends Number {
 
+    /**
+     *
+     */
+    private static final long serialVersionUID = -3470510082547143570L;
     private AtomicInteger bits;
 
     public AtomicFloat() {

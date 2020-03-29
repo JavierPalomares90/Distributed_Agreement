@@ -24,5 +24,10 @@ public class MaliciousDistributedAgreement extends DistributedAgreement
         ServerThread serverThread = new MaliciousServerThread(host.getWeight(), host.getServerId());
         processClientMessages(host, peers, serverThread);
     }
+    
+    public static void main(String[] args)
+    {
+        DistributedAgreement.main(args);
+    }
 
 }

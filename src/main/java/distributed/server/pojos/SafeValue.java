@@ -1,10 +1,8 @@
 package distributed.server.pojos;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
 
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @AllArgsConstructor
 public class SafeValue extends Value

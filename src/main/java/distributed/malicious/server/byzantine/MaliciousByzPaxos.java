@@ -26,9 +26,6 @@ public class MaliciousByzPaxos extends ByzPaxos
         // Increment the paxos Id
         logger.debug("Proposing value " + value + " with id " + id);
 
-        // Servers list doesn't include "this" server
-        int numServers = servers.size() + 1;
-
         // Phase 1 of Paxos: Propose the value maliciously
         // To confuse each of the acceptors, we're going to send a request with the same id,
         // but a random value

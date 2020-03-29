@@ -7,14 +7,10 @@ import distributed.server.paxos.requests.PrepareRequest;
 import distributed.server.paxos.requests.Request;
 import distributed.server.pojos.Server;
 import distributed.server.pojos.WeightedResponse;
-import distributed.server.threads.RequestThread;
 import distributed.server.threads.WeightedRequestThread;
 import distributed.utils.Command;
-import distributed.utils.Utils;
 import org.apache.log4j.Logger;
-import org.apache.log4j.spi.LoggerFactory;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
