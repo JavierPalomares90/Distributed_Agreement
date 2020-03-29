@@ -200,18 +200,28 @@ public class Proposer
      * @param acceptors
      * @return
      */
-    public boolean propose(List<Server> acceptors)
+    public boolean propose(List<Server> acceptors, PrepareRequest prepareRequest)
     {
         int id = this.serverThread.getPaxosId().get();
         String value =  this.serverThread.getPaxosValue();
         logger.debug("Proposing value " + value);
         // send the prepare request to all peers
-        PrepareRequest prepareRequest = new PrepareRequest();
         prepareRequest.setId(id);
         prepareRequest.setValue(value);
         prepareRequest.setSenderID(this.serverThread.getHostID().get());
         logger.debug("Sending prepare request to acceptors");
         sendPrepareRequest(prepareRequest,acceptors);
         return true;
+    }
+
+    /**
+     * Send the prepare request to the acceptors
+     * @param acceptors
+     * @return
+     */
+    public boolean propose(List<Server> acceptors)
+    {
+        PrepareRequest prepareRequest = new PrepareRequest();
+        return propose(acceptors,prepareRequest);
     }
 }

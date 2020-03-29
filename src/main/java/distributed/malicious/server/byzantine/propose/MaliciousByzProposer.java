@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
+import distributed.malicious.requests.RandomPrepareRequest;
 import distributed.server.byzantine.propose.ByzProposer;
 import distributed.server.paxos.requests.AcceptRequest;
 import distributed.server.paxos.requests.PrepareRequest;
@@ -17,6 +18,13 @@ import distributed.server.pojos.Server;
 public class MaliciousByzProposer extends ByzProposer
 {
     private static Logger logger = Logger.getLogger(MaliciousByzProposer.class);
+
+    @Override
+    public boolean propose(List<Server> acceptors)
+    {
+        PrepareRequest prepareRequest = new RandomPrepareRequest();
+        return propose(acceptors,prepareRequest);
+    }
 
 
     // Malicious send accept request
