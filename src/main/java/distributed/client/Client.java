@@ -131,7 +131,7 @@ public class Client
             String value = sc.nextLine();
             if(ZERO.equals(value) || ONE.equals(value))
             {
-                sendCmd(servers, value);
+                sendValue(servers, value);
             }
             else
             {

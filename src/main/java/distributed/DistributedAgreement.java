@@ -15,7 +15,7 @@ public class DistributedAgreement
 
 
 
-    private static Server getSelf(int serverId, List<Server> servers)
+    protected static Server getSelf(int serverId, List<Server> servers)
     {
         for (Server server:servers)
         {

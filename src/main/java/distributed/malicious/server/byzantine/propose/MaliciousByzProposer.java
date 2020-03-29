@@ -18,13 +18,6 @@ public class MaliciousByzProposer extends ByzProposer
 {
     private static Logger logger = Logger.getLogger(MaliciousByzProposer.class);
 
-    // Malicious send requests
-    @Override
-    protected void sendRequest(Request request, List<Server> acceptors, boolean waitForResponse) throws InterruptedException
-    {
-        // TODO: Complete impl
-    }
-
 
     // Malicious send accept request
     @Override
