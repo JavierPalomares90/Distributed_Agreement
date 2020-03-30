@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
+import distributed.malicious.requests.RandomAcceptRequest;
 import distributed.malicious.requests.RandomPrepareRequest;
 import distributed.malicious.requests.RandomSafeRequest;
 import distributed.server.byzantine.propose.ByzProposer;
@@ -71,5 +72,15 @@ public class MaliciousByzProposer extends ByzProposer
         SafeRequest safeRequest = new RandomSafeRequest();
         return safe(acceptors,safeRequest);
     }
+
+    // Maliciously accept values
+    @Override
+    public boolean accept(List<Server> acceptors)
+    {
+        AcceptRequest acceptRequest = new RandomAcceptRequest();
+        return accept(acceptors,acceptRequest);
+
+    }
+
 
 }

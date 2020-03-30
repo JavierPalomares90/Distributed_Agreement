@@ -146,9 +146,15 @@ public class Proposer
 
     public boolean accept(List<Server> acceptors)
     {
+        AcceptRequest acceptRequest = new AcceptRequest();
+        return accept(acceptors,acceptRequest);
+
+    }
+
+    public boolean accept(List<Server> acceptors,AcceptRequest acceptRequest)
+    {
         int id = this.serverThread.getPaxosId().get();
         String value =  this.serverThread.getPaxosValue();
-        AcceptRequest acceptRequest = new AcceptRequest();
         acceptRequest.setId(id);
         acceptRequest.setValue(value);
         // send the accept request to all acceptors
