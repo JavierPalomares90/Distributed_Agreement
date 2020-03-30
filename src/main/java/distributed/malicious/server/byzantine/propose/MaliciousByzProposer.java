@@ -5,10 +5,11 @@ import java.util.List;
 import org.apache.log4j.Logger;
 
 import distributed.malicious.requests.RandomPrepareRequest;
+import distributed.malicious.requests.RandomSafeRequest;
 import distributed.server.byzantine.propose.ByzProposer;
+import distributed.server.byzantine.requests.SafeRequest;
 import distributed.server.paxos.requests.AcceptRequest;
 import distributed.server.paxos.requests.PrepareRequest;
-import distributed.server.paxos.requests.Request;
 
 import distributed.server.pojos.Server;
 
@@ -67,7 +68,8 @@ public class MaliciousByzProposer extends ByzProposer
     @Override
     public boolean safe(List<Server> acceptors)
     {
-        return false;
+        SafeRequest safeRequest = new RandomSafeRequest();
+        return safe(acceptors,safeRequest);
     }
 
 }

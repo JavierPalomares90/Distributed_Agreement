@@ -34,8 +34,6 @@ public class MaliciousByzPaxos extends ByzPaxos
 
         proposer.propose(servers);
 
-
-
         // Don't wait till we get enough promise accepted messages. go ahead and let the messages know the value is safe
         proposer.safe(servers);
 

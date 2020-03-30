@@ -104,17 +104,23 @@ public class ByzProposer extends Proposer
         }
     }
 
-    public boolean safe(List<Server> acceptors)
+    public boolean safe(List<Server> acceptors, SafeRequest safeRequest)
     {
         int id = this.serverThread.getPaxosId().get();
         String value =  this.serverThread.getPaxosValue();
         logger.debug("Sending safe for value " + value);
-        SafeRequest safeRequest = new SafeRequest();
         safeRequest.setId(id);
         safeRequest.setValue(value);
         safeRequest.setSenderID(this.serverThread.getServerId());
         sendSafeRequest(safeRequest,acceptors);
         return true;
+
+    }
+
+    public boolean safe(List<Server> acceptors)
+    {
+        SafeRequest safeRequest = new SafeRequest();
+        return safe(acceptors,safeRequest);
     }
 
     /**
