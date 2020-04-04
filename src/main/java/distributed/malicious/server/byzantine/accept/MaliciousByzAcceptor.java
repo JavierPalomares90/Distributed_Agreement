@@ -6,93 +6,60 @@ import org.apache.log4j.Logger;
 
 import distributed.server.byzantine.accept.ByzAcceptor;
 import distributed.server.pojos.Server;
+import distributed.utils.Command;
+import distributed.utils.Value;
 
 /**
  * Malicious impl of a Byzantine Acceptor
+ * In order to be a malicious acceptor, we're going to flip the value received in the requests, and broadcast that.
+ * We'll also reject any broadcasts from the other acceptors
  */
 public class MaliciousByzAcceptor extends ByzAcceptor
 {
     private static Logger logger = Logger.getLogger(MaliciousByzAcceptor.class);
 
-    // Maliciously receive safe request
-    @Override
-    public String receiveSafeRequest(String[] tokens)
-    {
-        // TODO: Complete impl
-        return null;
-    }
-
-    // Maliciously receive promise request
-    @Override
-    public String receivePromiseRequest(String[] tokens, Server sender)
-    {
-        // TODO: Complete impl
-        return null;
-    }
-
-    // Maliciously receive accept request
-    @Override
-    public String receiveAcceptRequest(String[] tokens)
-    {
-        // TODO: Complete impl
-        return null;
-    }
-
-
-    // Maliciously receive accept request
-    @Override
-    public synchronized String receiveAcceptResponse(Server sender)
-    {
-        // TODO: Complete impl
-        return null;
-    }
-
-    // Maliciously receive prepare request
-    @Override
-    public String receivePrepareRequest(String[] tokens)
-    {
-        // TODO: Complete impl
-        return null;
-    }
-
     // Maliciously broadcast prepare request
     @Override
     protected boolean broadcastPrepareRequest(int id, String value, List<Server> acceptors, int senderID)
     {
-        // TODO: Complete impl
-        return false;
+        // We're going to lie about the value we received in the prepare request to confuse the other acceptors
+        if(Value.ZERO.getValue().equals(value))
+        {
+            value = Value.ONE.getValue();
+        }else
+        {
+            value = Value.ZERO.getValue();
+        }
+        return super.broadcastPrepareRequest(id,value,acceptors,senderID);
     }
 
     // Maliciously broadcast safe request
     @Override
     protected boolean broadcastSafeRequest(int id, String value, List<Server> acceptors, int senderID)
     {
-        // TODO: Complete impl
-        return false;
+        // We're going to lie about the value we received in the safe request to confuse the other acceptors
+        if(Value.ZERO.getValue().equals(value))
+        {
+            value = Value.ONE.getValue();
+        }else
+        {
+            value = Value.ZERO.getValue();
+        }
+        return super.broadcastPrepareRequest(id,value,acceptors,senderID);
     }
 
-    // Maliciously broadcast commands
-    @Override
-    protected synchronized boolean broadcastCommand(String cmd, List<Server> acceptors, int senderID, int numFaulty) throws InterruptedException
-    {
-        // TODO: Complete impl
-        return false;
-    }
-
-    // Maliciously receive safe request
+    // Maliciously receive safe request. Reject the broadcast
     @Override
     public String receiveSafeBroadcast(String[] tokens)
     {
-        // TODO: Complete impl
-        return null;
+        return Command.SAFE_BROADCAST_REJECT.getCommand();
     }
 
-    // Maliciously receive prepare request
+    // Maliciously receive prepare request. Reject the broadcast
     @Override
     public String receivePrepareBroadcast(String[] tokens)
     {
-        // TODO: Complete impl
-        return null;
+        return Command.PREPARE_BROADCAST_REJECT.getCommand();
     }
 
 

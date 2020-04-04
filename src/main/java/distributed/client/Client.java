@@ -3,6 +3,7 @@ package distributed.client;
 import distributed.server.pojos.Server;
 import distributed.utils.Command;
 import distributed.utils.Utils;
+import distributed.utils.Value;
 import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
@@ -16,8 +17,6 @@ import java.util.Scanner;
 public class Client
 {
     private static Logger logger = Logger.getLogger(Client.class);
-    protected static String ZERO = "0";
-    protected static String ONE = "1";
 
 
     private static Server pickServer(List<Server> servers, int index)
@@ -129,7 +128,7 @@ public class Client
         {
 
             String value = sc.nextLine();
-            if(ZERO.equals(value) || ONE.equals(value))
+            if(Value.ZERO.getValue().equals(value) || Value.ONE.getValue().equals(value))
             {
                 sendValue(servers, value);
             }
