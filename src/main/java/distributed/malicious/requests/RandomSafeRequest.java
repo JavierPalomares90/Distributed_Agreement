@@ -9,6 +9,7 @@ public class RandomSafeRequest extends SafeRequest
     @Override
     public String toString()
     {
-        return Command.SAFE_REQUEST + " " + this.getId() + " " + Utils.getRandomValue() + " " + this.getSenderID() + "\n";
+        String s = Command.SAFE_REQUEST + " " + this.getId() + " " + Utils.getRandomValue() + " " + this.getSenderID() + "\n";
+        return s;
     }
 }

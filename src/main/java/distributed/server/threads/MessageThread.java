@@ -250,6 +250,10 @@ public class MessageThread implements Runnable
             // An acceptor is broadcasting the prepare request it received
             return receivePrepareBroadcast(tokens);
         }
+        else
+        {
+            logger.error("Invalid message sent");
+        }
         return "Unable to process msg " + msg;
     }
     

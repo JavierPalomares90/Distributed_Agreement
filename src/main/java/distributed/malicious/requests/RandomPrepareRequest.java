@@ -10,7 +10,8 @@ public class RandomPrepareRequest extends PrepareRequest
     @Override
     public String toString()
     {
-        return Command.PREPARE_REQUEST + " " + this.getId() + " " + Utils.getRandomValue() + " " + this.getSenderID() + "\n";
+        String s = Command.PREPARE_REQUEST + " " + this.getId() + " " + Utils.getRandomValue() + " " + this.getSenderID() + "\n";
+        return s;
     }
     // TODO: Add more impls that lie about the id/value/senderId
 

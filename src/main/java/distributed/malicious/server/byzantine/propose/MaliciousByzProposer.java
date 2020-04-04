@@ -28,43 +28,6 @@ public class MaliciousByzProposer extends ByzProposer
         return propose(acceptors,prepareRequest);
     }
 
-
-    // Malicious send accept request
-    @Override
-    protected void sendAcceptRequest(AcceptRequest acceptRequest, List<Server> acceptors)
-    {
-        // TODO: Complete impl
-    }
-
-    // Maliciously send prepare request
-    @Override
-    protected void sendPrepareRequest(PrepareRequest prepareRequest, List<Server> acceptors)
-    {
-        // To confuse each of the acceptors, we're going to send a request with the same id,
-        // but a random value
-        try
-        {
-            logger.debug("sending prepare request");
-            // Increment the number of promises for ourself
-            // TODO: Maliciously increment weights
-            this.serverThread.getWeightedPromises().set(this.serverThread.getWeightedPromises().get() + this.serverThread.getOwnWeight().get());
-            sendRequest(prepareRequest, acceptors);
-        }catch (InterruptedException e)
-        {
-            logger.debug("Unable to send prepare request",e);
-        }
-    }
-
-    /**
-     * Maliciously parse the responses from the acceptors
-     * @param response
-     */
-    @Override
-    protected void parseResponseFromAcceptor(String response, Float weight)
-    {
-        // TODO: Complete impl
-    }
-
     // Maliciously mark safe request
     @Override
     public boolean safe(List<Server> acceptors)
@@ -79,8 +42,5 @@ public class MaliciousByzProposer extends ByzProposer
     {
         AcceptRequest acceptRequest = new RandomAcceptRequest();
         return accept(acceptors,acceptRequest);
-
     }
-
-
 }

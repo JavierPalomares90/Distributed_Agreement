@@ -10,7 +10,8 @@ public class RandomAcceptRequest extends AcceptRequest
     @Override
     public String toString()
     {
-        return Command.ACCEPT + " " + this.getId() + " " + Utils.getRandomValue() + "\n";
+        String s = Command.ACCEPT_REQUEST + " " + this.getId() + " " + Utils.getRandomValue() + "\n";
+        return s;
     }
 
 

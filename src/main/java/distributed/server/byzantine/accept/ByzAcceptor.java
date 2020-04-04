@@ -169,7 +169,7 @@ public class ByzAcceptor extends Acceptor
         int id = Integer.parseInt(tokens[1]);
         String value = tokens[2];
         int senderID = Integer.parseInt(tokens[3]);
-        logger.debug("Receiving prepare request with id " + id + " value " + value);
+        logger.debug("Receiving prepare request with id " + id + " value " + value + " from senderID: " + senderID);
         ProposedValue proposedValue = new ProposedValue();
         proposedValue.setId(id);
         proposedValue.setValue(value);
