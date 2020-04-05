@@ -272,7 +272,24 @@ public class ServerThread implements Runnable
         threadLock.unlock();
         return result;
     }
+
+    protected void startMessageThread(MessageThread clientThread, Socket socket)
+    {
+        clientThread.setSocket(socket);
+        clientThread.setPeers(peers);
+        clientThread.setPhase1Condition(waitForPromises);
+        clientThread.setPhase1cCondition(waitForSafe);
+        clientThread.setPhase2Condition(waitForAccepts);
+        clientThread.setServerThread(this);
+        new Thread(clientThread).start();
+    }
     
+    protected void startMessageThread(Server sender,Socket socket)
+    {
+        // Spawn off a new thread to process messages from this client
+        MessageThread clientThread = new MessageThread(sender);
+        startMessageThread(clientThread,socket);
+    }
 
     /**
      * Listen for messages from the peers
@@ -306,15 +323,7 @@ public class ServerThread implements Runnable
                 if(socket != null)
                 {
                     Server sender = Utils.getSender(senderIP, senderPort, peers);
-                    // Spawn off a new thread to process messages from this client
-                    MessageThread clientThread = new MessageThread(sender);
-                    clientThread.setSocket(socket);
-                    clientThread.setPeers(peers);
-                    clientThread.setPhase1Condition(waitForPromises);
-                    clientThread.setPhase1cCondition(waitForSafe);
-                    clientThread.setPhase2Condition(waitForAccepts);
-                    clientThread.setServerThread(this);
-                    new Thread(clientThread).start();
+                    startMessageThread(sender,socket);
                 }
             }
 

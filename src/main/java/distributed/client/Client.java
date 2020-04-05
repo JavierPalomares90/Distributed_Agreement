@@ -3,6 +3,7 @@ package distributed.client;
 import distributed.server.pojos.Server;
 import distributed.utils.Command;
 import distributed.utils.Utils;
+import distributed.utils.Value;
 import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
@@ -16,8 +17,6 @@ import java.util.Scanner;
 public class Client
 {
     private static Logger logger = Logger.getLogger(Client.class);
-    private static String ZERO = "0";
-    private static String ONE = "1";
 
 
     private static Server pickServer(List<Server> servers, int index)
@@ -55,7 +54,13 @@ public class Client
 
     }
 
-    private static void sendCmd(List<Server> servers, String cmd)
+    public static void sendValue(List<Server> servers, String value)
+    {
+        String cmd = Command.PROPOSE.getCommand() + " " + value + "\n";
+        sendCmd(servers, cmd);
+    }
+
+    public static void sendCmd(List<Server> servers, String cmd)
     {
         Socket socket = getSocket(servers);
         PrintWriter outputWriter = null;
@@ -123,11 +128,9 @@ public class Client
         {
 
             String value = sc.nextLine();
-            String cmd;
-            if(ZERO.equals(value) || ONE.equals(value))
+            if(Value.ZERO.getValue().equals(value) || Value.ONE.getValue().equals(value))
             {
-                cmd = Command.PROPOSE.getCommand() + " " + value + "\n";
-                sendCmd(servers, cmd);
+                sendValue(servers, value);
             }
             else
             {
@@ -136,5 +139,6 @@ public class Client
             System.out.println("Propose a value:\n [0] 0\n [1] 1");
 
         }
+        sc.close();
     }
 }

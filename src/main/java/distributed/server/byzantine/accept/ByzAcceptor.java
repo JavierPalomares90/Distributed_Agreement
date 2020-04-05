@@ -5,9 +5,7 @@ import distributed.server.pojos.ProposedValue;
 import distributed.server.pojos.SafeValue;
 import distributed.server.pojos.Server;
 import distributed.server.pojos.WeightedResponse;
-import distributed.server.threads.BroadcastThread;
 import distributed.server.threads.WeightedBroadcastThread;
-import distributed.server.threads.WeightedRequestThread;
 import distributed.utils.Command;
 import distributed.utils.Utils;
 import lombok.AccessLevel;
@@ -80,11 +78,11 @@ public class ByzAcceptor extends Acceptor
     }
 
     /**
-     * TODO: Match the signatures so this method is overriden
      * @param tokens
      * @param sender
      * @return
      */
+    @Override
     public String receivePromiseRequest(String[] tokens, Server sender)
     {
         logger.debug("Received promise request");
@@ -171,7 +169,7 @@ public class ByzAcceptor extends Acceptor
         int id = Integer.parseInt(tokens[1]);
         String value = tokens[2];
         int senderID = Integer.parseInt(tokens[3]);
-        logger.debug("Receiving prepare request with id " + id + " value " + value);
+        logger.debug("Receiving prepare request with id " + id + " value " + value + " from senderID: " + senderID);
         ProposedValue proposedValue = new ProposedValue();
         proposedValue.setId(id);
         proposedValue.setValue(value);
@@ -203,7 +201,7 @@ public class ByzAcceptor extends Acceptor
 
     }
 
-    private boolean broadcastPrepareRequest(int id, String value, List<Server> acceptors, int senderID)
+    protected boolean broadcastPrepareRequest(int id, String value, List<Server> acceptors, int senderID)
     {
         // Broadcast the request we received from a proposer to all peers
         String cmd = Command.PREPARE_BROADCAST.getCommand() + " " + id + " " + value + "\n";
@@ -217,7 +215,7 @@ public class ByzAcceptor extends Acceptor
         return false;
     }
 
-    private boolean broadcastSafeRequest(int id, String value, List<Server> acceptors, int senderID)
+    protected boolean broadcastSafeRequest(int id, String value, List<Server> acceptors, int senderID)
     {
         // Broadcast the request we received from a proposer to all peers
         String cmd = Command.SAFE_BROADCAST.getCommand() + " " + id + " " + value + "\n";
@@ -238,7 +236,7 @@ public class ByzAcceptor extends Acceptor
     }
 
 
-    private synchronized boolean broadcastCommand(String cmd, List<Server> acceptors, int senderID, int numFaulty) throws InterruptedException
+    protected synchronized boolean broadcastCommand(String cmd, List<Server> acceptors, int senderID, int numFaulty) throws InterruptedException
     {
         // Execute broadcast in executor service
         ExecutorService executor = Executors.newFixedThreadPool(NUM_BROADCAST_THREADS);

@@ -4,11 +4,7 @@ import distributed.server.pojos.Server;
 import distributed.server.threads.ServerThread;
 import distributed.utils.Utils;
 import org.apache.log4j.Logger;
-import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.constructor.Constructor;
 
-import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.List;
 
 public class DistributedAgreement
@@ -19,7 +15,7 @@ public class DistributedAgreement
 
 
 
-    private static Server getSelf(int serverId, List<Server> servers)
+    protected static Server getSelf(int serverId, List<Server> servers)
     {
         for (Server server:servers)
         {
@@ -29,6 +25,23 @@ public class DistributedAgreement
             }
         }
         return null;
+    }
+
+    protected static void processClientMessages(Server host,List<Server> peers)
+    {
+        ServerThread serverThread = new ServerThread(host.getWeight(), host.getServerId());
+        processClientMessages(host, peers,serverThread);
+    }
+
+    protected static void processClientMessages(Server host,List<Server> peers,ServerThread serverThread)
+    {
+        serverThread.setIpAddress(host.getIpAddress());
+        // Remove self from the list of hosts
+        peers.remove(host);
+        serverThread.setPeers(peers);
+        serverThread.setPort(host.getPort());
+        serverThread.setServerId(host.getServerId());
+        new Thread(serverThread).start();
     }
 
     public static void main(String[] args)
@@ -55,14 +68,7 @@ public class DistributedAgreement
         }
 
         // Spawn off a thread to handle messages from client
-        ServerThread serverThread = new ServerThread(host.getWeight(), host.getServerId());
-        serverThread.setIpAddress(host.getIpAddress());
-        // Remove self from the list of hosts
-        peers.remove(host);
-        serverThread.setPeers(peers);
-        serverThread.setPort(host.getPort());
-        serverThread.setServerId(host.getServerId());
-        new Thread(serverThread).start();
+        processClientMessages(host, peers);
     }
 
 

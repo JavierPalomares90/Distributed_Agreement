@@ -7,14 +7,9 @@ import distributed.server.paxos.requests.Request;
 import distributed.server.threads.RequestThread;
 import distributed.server.threads.ServerThread;
 import distributed.utils.Command;
-import distributed.utils.Utils;
 import lombok.Data;
 import org.apache.log4j.Logger;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -151,9 +146,15 @@ public class Proposer
 
     public boolean accept(List<Server> acceptors)
     {
+        AcceptRequest acceptRequest = new AcceptRequest();
+        return accept(acceptors,acceptRequest);
+
+    }
+
+    public boolean accept(List<Server> acceptors,AcceptRequest acceptRequest)
+    {
         int id = this.serverThread.getPaxosId().get();
         String value =  this.serverThread.getPaxosValue();
-        AcceptRequest acceptRequest = new AcceptRequest();
         acceptRequest.setId(id);
         acceptRequest.setValue(value);
         // send the accept request to all acceptors
@@ -205,18 +206,28 @@ public class Proposer
      * @param acceptors
      * @return
      */
-    public boolean propose(List<Server> acceptors)
+    public boolean propose(List<Server> acceptors, PrepareRequest prepareRequest)
     {
         int id = this.serverThread.getPaxosId().get();
         String value =  this.serverThread.getPaxosValue();
         logger.debug("Proposing value " + value);
         // send the prepare request to all peers
-        PrepareRequest prepareRequest = new PrepareRequest();
         prepareRequest.setId(id);
         prepareRequest.setValue(value);
         prepareRequest.setSenderID(this.serverThread.getHostID().get());
         logger.debug("Sending prepare request to acceptors");
         sendPrepareRequest(prepareRequest,acceptors);
         return true;
+    }
+
+    /**
+     * Send the prepare request to the acceptors
+     * @param acceptors
+     * @return
+     */
+    public boolean propose(List<Server> acceptors)
+    {
+        PrepareRequest prepareRequest = new PrepareRequest();
+        return propose(acceptors,prepareRequest);
     }
 }

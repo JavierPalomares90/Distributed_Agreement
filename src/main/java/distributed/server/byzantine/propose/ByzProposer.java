@@ -7,14 +7,10 @@ import distributed.server.paxos.requests.PrepareRequest;
 import distributed.server.paxos.requests.Request;
 import distributed.server.pojos.Server;
 import distributed.server.pojos.WeightedResponse;
-import distributed.server.threads.RequestThread;
 import distributed.server.threads.WeightedRequestThread;
 import distributed.utils.Command;
-import distributed.utils.Utils;
 import org.apache.log4j.Logger;
-import org.apache.log4j.spi.LoggerFactory;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -108,24 +104,30 @@ public class ByzProposer extends Proposer
         }
     }
 
-    public boolean safe(List<Server> acceptors)
+    public boolean safe(List<Server> acceptors, SafeRequest safeRequest)
     {
         int id = this.serverThread.getPaxosId().get();
         String value =  this.serverThread.getPaxosValue();
         logger.debug("Sending safe for value " + value);
-        SafeRequest safeRequest = new SafeRequest();
         safeRequest.setId(id);
         safeRequest.setValue(value);
         safeRequest.setSenderID(this.serverThread.getServerId());
         sendSafeRequest(safeRequest,acceptors);
         return true;
+
+    }
+
+    public boolean safe(List<Server> acceptors)
+    {
+        SafeRequest safeRequest = new SafeRequest();
+        return safe(acceptors,safeRequest);
     }
 
     /**
      * Parse the responses from the acceptors
      * @param response
      */
-    private void parseResponseFromAcceptor(String response, Float weight)
+    protected void parseResponseFromAcceptor(String response, Float weight)
     {
         /**
          * TODO: If the request timed out, the input to this message is null, so neither accepts or rejects will update.

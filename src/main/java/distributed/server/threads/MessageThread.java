@@ -2,8 +2,6 @@ package distributed.server.threads;
 
 import distributed.server.byzantine.ByzPaxos;
 import distributed.server.byzantine.accept.ByzAcceptor;
-import distributed.server.paxos.Paxos;
-import distributed.server.paxos.accept.Acceptor;
 import distributed.server.pojos.Server;
 import distributed.utils.Command;
 import lombok.AccessLevel;
@@ -19,7 +17,6 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
 
 public class MessageThread implements Runnable
 {
@@ -50,18 +47,13 @@ public class MessageThread implements Runnable
         this.sender = sender;
     }
 
-   // Start the paxos algorithm to propose the value
-    private String proposeValue(String value)
+    protected String startPaxos(ByzPaxos paxos,String value)
     {
-        logger.debug("Proposing value using paxos: " + value);
-
-        ByzPaxos paxos = new ByzPaxos();
         paxos.setValue(value);
         paxos.setServers(this.peers);
         paxos.setPhase1Condition(this.phase1Condition);
         paxos.setPhase2Condition(this.phase2Condition);
         paxos.setServerThread(this.serverThread);
-
         // Before starting, check if there is already a paxos proposal running
         // If so, stop it and reset for the new proposal
 
@@ -73,10 +65,19 @@ public class MessageThread implements Runnable
         return paxos.proposeValue();
     }
 
-
-    public String receivePrepareRequest(String[] tokens)
+   // Start the paxos algorithm to propose the value
+    protected String proposeValue(String value)
     {
-        ByzAcceptor acceptor = new ByzAcceptor();
+        logger.debug("Proposing value using paxos: " + value);
+
+        ByzPaxos paxos = new ByzPaxos();
+
+        return startPaxos(paxos,value);
+
+    }
+
+    protected String receivePrepareRequest(ByzAcceptor acceptor,String[] tokens)
+    {
         acceptor.setServerThread(this.serverThread);
         List<Server> acceptors = new ArrayList<>(this.peers);
         // Remove the sender from the list of acceptors to broadcast to
@@ -86,70 +87,110 @@ public class MessageThread implements Runnable
         return acceptor.receivePrepareRequest(tokens);
     }
 
-    public synchronized String receivePromiseRequest(String[] tokens, Server sender)
+
+    public String receivePrepareRequest(String[] tokens)
     {
         ByzAcceptor acceptor = new ByzAcceptor();
+        return receivePrepareRequest(acceptor,tokens);
+    }
+
+    protected String receivePromiseRequest(ByzAcceptor acceptor, String[] tokens, Server sender)
+    {
         acceptor.setServerThread(this.serverThread);
         acceptor.setWaitForSafe(this.phase1cCondition);
         acceptor.setAcceptors(this.peers);
         acceptor.receivePromiseRequest(tokens, sender);
         // Return null. Don't need to write anything back
         return null;
+
     }
 
-
-    public String receiveAcceptRequest(String[] tokens)
+    public synchronized String receivePromiseRequest(String[] tokens, Server sender)
     {
         ByzAcceptor acceptor = new ByzAcceptor();
+        return receivePromiseRequest(acceptor,tokens,sender);
+    }
+
+    protected String receiveAcceptRequest(ByzAcceptor acceptor, String[] tokens)
+    {
         acceptor.setServerThread(this.serverThread);
         acceptor.setWaitForSafe(this.phase1cCondition);
         acceptor.setAcceptors(this.peers);
         return acceptor.receiveAcceptRequest(tokens);
     }
 
-    public synchronized String receiveAcceptResponse(Server sender)
+
+    public String receiveAcceptRequest(String[] tokens)
     {
         ByzAcceptor acceptor = new ByzAcceptor();
+        return receiveAcceptRequest(acceptor, tokens);
+    }
+
+    protected String receiveAcceptResponse(ByzAcceptor acceptor, Server sender)
+    {
         acceptor.setServerThread(this.serverThread);
-        acceptor.setPhase2Condition(phase2Condition);
+        acceptor.setPhase2Condition(this.phase2Condition);
         acceptor.setAcceptors(this.peers);
         acceptor.setWaitForSafe(this.phase1cCondition);
         return acceptor.receiveAcceptResponse(sender);
     }
 
-    private String receiveSafeRequest(String[] tokens)
+    public synchronized String receiveAcceptResponse(Server sender)
     {
         ByzAcceptor acceptor = new ByzAcceptor();
+        return receiveAcceptResponse(acceptor, sender);
+    }
+
+
+    protected String receiveSafeRequest(ByzAcceptor acceptor, String[] tokens)
+    {
         acceptor.setServerThread(this.serverThread);
-        acceptor.setPhase2Condition(phase2Condition);
+        acceptor.setPhase2Condition(this.phase2Condition);
         List<Server> acceptors = new ArrayList<>(this.peers);
         // Remove the sender from the list of acceptors to broadcast to
         acceptors.remove(sender);
         acceptor.setAcceptors(acceptors);
         acceptor.setWaitForSafe(this.phase1cCondition);
         return acceptor.receiveSafeRequest(tokens);
+
     }
 
-    private String receiveSafeBroadcast(String[] tokens)
+    protected String receiveSafeRequest(String[] tokens)
     {
-
         ByzAcceptor acceptor = new ByzAcceptor();
+        return receiveSafeRequest(acceptor, tokens);
+    }
+
+    protected String receiveSafeBroadcast(ByzAcceptor acceptor, String[] tokens)
+    {
         acceptor.setServerThread(this.serverThread);
-        acceptor.setPhase2Condition(phase2Condition);
+        acceptor.setPhase2Condition(this.phase2Condition);
         acceptor.setAcceptors(this.peers);
         acceptor.setWaitForSafe(this.phase1cCondition);
         return acceptor.receiveSafeBroadcast(tokens);
+    }
+
+    protected String receiveSafeBroadcast(String[] tokens)
+    {
+
+        ByzAcceptor acceptor = new ByzAcceptor();
+        return receiveSafeBroadcast(acceptor, tokens);
 
     }
 
-    private String receivePrepareBroadcast(String[] tokens)
+    protected String receivePrepareBroadcast(ByzAcceptor acceptor, String[] tokens)
     {
-        ByzAcceptor acceptor = new ByzAcceptor();
         acceptor.setServerThread(this.serverThread);
-        acceptor.setPhase2Condition(phase2Condition);
+        acceptor.setPhase2Condition(this.phase2Condition);
         acceptor.setAcceptors(this.peers);
         acceptor.setWaitForSafe(this.phase1cCondition);
         return acceptor.receivePrepareBroadcast(tokens);
+    }
+
+    protected String receivePrepareBroadcast(String[] tokens)
+    {
+        ByzAcceptor acceptor = new ByzAcceptor();
+        return receivePrepareBroadcast(acceptor, tokens);
 
     }
 
@@ -208,6 +249,10 @@ public class MessageThread implements Runnable
         {
             // An acceptor is broadcasting the prepare request it received
             return receivePrepareBroadcast(tokens);
+        }
+        else
+        {
+            logger.error("Invalid message sent");
         }
         return "Unable to process msg " + msg;
     }
