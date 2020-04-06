@@ -1,7 +1,7 @@
 # Distributed Agreement 
 ## Javier Palomares and Matt Molter
 
-This is an implementation of the Weighted Distributed Agreement using Byzantine Paxos. For complete details on the algorithm, please see Distributed_Agreement.pdf and Distributed_Agreement_Presentation.pdf. Both are attached to this repo.
+This is an implementation of the Weighted Distributed Agreement using Byzantine Paxos. For complete details on the algorithm, please see Distributed_Agreement.pdf and Distributed_Agreement_Presentation.pdf. Both are attached to this repo. Additionally, visit www.javierpalomares.net/my-blog/2020/4/5/the-byzantine-distributed-agreement-problem for a quick run down of the Paxos and Byzantine Paxos algorithms
 
 What follows are the instructions for running the server and client.
 The project is built and executed with maven.
